@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Footer from "@/components/layout/Footer";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
-import Editorial from "@/blog/components/home/Editoral";
+
 
 export default function OrangeMagPage() {
   const router = useRouter();
