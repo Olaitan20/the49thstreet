@@ -38,7 +38,7 @@ export default function Latest() {
 
         // Get Music category ID
         const categoriesResponse = await fetch(
-          "http://staging.the49thstreet.com/wp-json/wp/v2/categories?slug=music"
+          "https://staging.the49thstreet.com/wp-json/wp/v2/categories?slug=music"
         );
         const categories = await categoriesResponse.json();
         if (!categories.length) {
@@ -49,7 +49,7 @@ export default function Latest() {
 
         // Fetch posts from Music category
         const postsResponse = await fetch(
-          `http://staging.the49thstreet.com/wp/v2/posts?_embed&categories=${musicCategoryId}&per_page=3&orderby=date&order=desc`
+          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&categories=${musicCategoryId}&per_page=3&orderby=date&order=desc`
         );
         const posts = await postsResponse.json();
 

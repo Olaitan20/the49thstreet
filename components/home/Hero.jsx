@@ -50,8 +50,8 @@ export default function Hero() {
         
         // Use Promise.all to fetch both endpoints simultaneously
         const [slideshowResponse, sidebarResponse] = await Promise.all([
-          fetch('http://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&per_page=12&orderby=date&order=desc'),
-          fetch('http://staging.the49thstreet.com/wp/v2/posts?_embed&per_page=12&orderby=date&order=desc') 
+          fetch('https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&per_page=12&orderby=date&order=desc'),
+          fetch('https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&per_page=12&orderby=date&order=desc') 
         ]);
 
         // Check if responses are ok
