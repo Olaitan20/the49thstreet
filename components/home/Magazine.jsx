@@ -287,10 +287,10 @@ export default function Magazine() {
       <div className="flex items-center justify-between py-6 px-4 md:px-0">
         <div>
           <p className="text-[12px] uppercase mb-2 tracking-widest text-white/50">
-            /// ORANGE MAG
+            /// UNCVR
           </p>
           <p className="text-[16px] uppercase font-extrabold text-white">
-            Read Orange Mag
+            Read UNCVR
           </p>
         </div>
 
@@ -338,11 +338,11 @@ export default function Magazine() {
             onClick={() => handleMagazineClick(displayMagazines[currentIndex].slug)}
             className="cursor-pointer group"
           >
-            <div className="relative w- h-[520px] sm:h-[500px] overflow-hidden">
+            <div className="relative  h-[520px]  overflow-hidden">
               <img
                 src={displayMagazines[currentIndex].src}
                 alt={displayMagazines[currentIndex].title}
-                className="w-full h-full object-fill  transform transition-transform duration-700 group-hover:scale-105"
+                className="w-full h-[57vh] object-cover  transform transition-transform duration-700 group-hover:scale-105"
                 onError={(e) => {
                   const localImages = [
                     "/images/magazine.png",
