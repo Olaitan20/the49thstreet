@@ -206,7 +206,7 @@ export default function Hero() {
     return (
       <div className="mx-0 sm:mx-6 md:mx-8 lg:mx-16 md:mt-1 flex gap-4 text-white">
         <div className="w-full text-center py-8">
-          <p>No content available</p>
+          <h2>No content available</h2>
         </div>
       </div>
     );
@@ -240,7 +240,7 @@ export default function Hero() {
                 <img
                   src={featuredPosts[index].image}
                   alt={featuredPosts[index].title}
-                  className="w-full h-[60vh] object-fill object-center"
+                  className="w-full h-[60vh] object-cover "
                   onError={(e) => {
                     e.target.src = '/images/placeholder.jpg';
                   }}
