@@ -77,14 +77,14 @@ export default function ArticlePage() {
 
         
         let response = await fetch(
-          `http://staging.the49thstreet.com/wp-json/wp/v2/posts?slug=${slug}&_embed&per_page=1`
+          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?slug=${slug}&_embed&per_page=1`
         );
         let posts = await response.json();
 
         
         if (!posts || posts.length === 0) {
           const searchResponse = await fetch(
-            `http://staging.the49thstreet.com/wp-json/wp/v2/posts?search=${slug}&_embed&per_page=1`
+            `https://staging.the49thstreet.com/wp-json/wp/v2/posts?search=${slug}&_embed&per_page=1`
           );
           const searchData = await searchResponse.json();
 

@@ -28,7 +28,7 @@ export default function OrangeMagPage() {
         setIsLoading(true);
         
         const response = await fetch(
-          "http://staging.the49thstreet.com/wp-json/wp/v2/magazine?_embed&per_page=6&orderby=date&order=desc"
+          "https://staging.the49thstreet.com/wp-json/wp/v2/magazine?_embed&per_page=6&orderby=date&order=desc"
         );
 
         if (!response.ok) {

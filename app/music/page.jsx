@@ -41,7 +41,7 @@ export default function Page() {
     const getMusicCategory = async () => {
       try {
         const categoriesResponse = await fetch(
-          "http://staging.the49thstreet.com/wp-json/wp/v2/categories?slug=music"
+          "https://staging.the49thstreet.com/wp-json/wp/v2/categories?slug=music"
         );
         const categories = await categoriesResponse.json();
         
@@ -66,7 +66,7 @@ export default function Page() {
       // Try music category if we have the ID
       if (musicCategoryId) {
         const postsResponse = await fetch(
-          `http://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&categories=${musicCategoryId}&per_page=9&page=${pageNum}&orderby=date&order=desc`
+          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&categories=${musicCategoryId}&per_page=9&page=${pageNum}&orderby=date&order=desc`
         );
         
         if (postsResponse.ok) {
@@ -81,7 +81,7 @@ export default function Page() {
       // Fallback to latest if no music posts
       if (posts.length === 0) {
         const latestResponse = await fetch(
-          `http://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&per_page=9&page=${pageNum}&orderby=date&order=desc`
+          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&per_page=9&page=${pageNum}&orderby=date&order=desc`
         );
         
         if (latestResponse.ok) {

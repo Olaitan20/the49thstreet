@@ -46,7 +46,7 @@ export default function Page() {
     const getFashionCategory = async () => {
       try {
         const categoriesResponse = await fetch(
-          'http://staging.the49thstreet.com/wp-json/wp/v2/categories?slug=fashion'
+          'https://staging.the49thstreet.com/wp-json/wp/v2/categories?slug=fashion'
         );
         
         if (!categoriesResponse.ok) {
@@ -80,7 +80,7 @@ export default function Page() {
       // Try fashion category if we have the ID
       if (fashionCategoryId) {
         const postsResponse = await fetch(
-          `http://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&categories=${fashionCategoryId}&per_page=9&page=${pageNum}&orderby=date&order=desc`
+          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&categories=${fashionCategoryId}&per_page=9&page=${pageNum}&orderby=date&order=desc`
         );
         
         if (postsResponse.ok) {
@@ -100,7 +100,7 @@ export default function Page() {
       if (posts.length === 0) {
         console.log("🔄 No fashion posts, fetching latest posts...");
         const latestResponse = await fetch(
-          `http://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&per_page=9&page=${pageNum}&orderby=date&order=desc`
+          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&per_page=9&page=${pageNum}&orderby=date&order=desc`
         );
         
         if (latestResponse.ok) {

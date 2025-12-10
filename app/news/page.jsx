@@ -49,7 +49,7 @@ export default function Page() {
     const fetchCategories = async () => {
       try {
         const categoriesRes = await fetch(
-          "http://staging.the49thstreet.com/wp-json/wp/v2/categories"
+          "https://staging.the49thstreet.com/wp-json/wp/v2/categories"
         );
 
         if (!categoriesRes.ok)
@@ -72,7 +72,7 @@ export default function Page() {
       setError(null);
 
       const postsRes = await fetch(
-        `http://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&per_page=9&page=${pageNumber}`
+        `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&per_page=9&page=${pageNumber}`
       );
 
       if (!postsRes.ok) {

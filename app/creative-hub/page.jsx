@@ -55,7 +55,7 @@ export default function Page() {
 
         // Fetch the specific Creative Hub category
         const categoriesResponse = await fetch(
-          "http://staging.the49thstreet.com/wp-json/wp/v2/categories?slug=creative-hub"
+          "https://staging.the49thstreet.com/wp-json/wp/v2/categories?slug=creative-hub"
         );
         
         if (!categoriesResponse.ok) {
@@ -99,10 +99,10 @@ export default function Page() {
       
       if (categoryId) {
         // Fetch posts from Creative Hub category
-        postsUrl = `http://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&categories=${categoryId}&per_page=9&page=${pageNum}&orderby=date&order=desc`;
+        postsUrl = `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&categories=${categoryId}&per_page=9&page=${pageNum}&orderby=date&order=desc`;
       } else {
         // Fetch latest posts if no category found
-        postsUrl = `http://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&per_page=9&page=${pageNum}&orderby=date&order=desc`;
+        postsUrl = `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&per_page=9&page=${pageNum}&orderby=date&order=desc`;
       }
       
       console.log(`📡 Fetching page ${pageNum}:`, postsUrl);

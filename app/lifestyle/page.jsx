@@ -72,7 +72,7 @@ export default function Page() {
       setError(null);
 
       const res = await fetch(
-        `http://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&categories=${LIFESTYLE_CATEGORY_ID}&per_page=9&page=${pageNum}&orderby=date&order=desc`
+        `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&categories=${LIFESTYLE_CATEGORY_ID}&per_page=9&page=${pageNum}&orderby=date&order=desc`
       );
 
       if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);

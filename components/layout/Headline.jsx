@@ -18,7 +18,7 @@ export default function Headline() {
         console.log("🔄 Fetching latest news for headline...");
         
         const response = await fetch(
-          'http://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&per_page=5&orderby=date&order=desc'
+          'https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&per_page=5&orderby=date&order=desc'
         );
         
         if (!response.ok) {

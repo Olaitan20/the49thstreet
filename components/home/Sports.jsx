@@ -33,7 +33,7 @@ export default function Sports() {
         setIsLoadingArticles(true);
 
         const allCategoriesResponse = await fetch(
-          "http://staging.the49thstreet.com/wp-json/wp/v2/categories"
+          "https://staging.the49thstreet.com/wp-json/wp/v2/categories"
         );
 
         if (!allCategoriesResponse.ok) {
@@ -52,7 +52,7 @@ export default function Sports() {
 
         if (sportsCategory) {
           const postsResponse = await fetch(
-            `http://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&categories=${sportsCategory.id}&per_page=3&orderby=date&order=desc`
+            `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&categories=${sportsCategory.id}&per_page=3&orderby=date&order=desc`
           );
 
           if (postsResponse.ok) {
@@ -62,7 +62,7 @@ export default function Sports() {
 
         if (posts.length === 0) {
           const latestResponse = await fetch(
-            "http://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&per_page=3&orderby=date&order=desc"
+            "https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&per_page=3&orderby=date&order=desc"
           );
 
           if (latestResponse.ok) {

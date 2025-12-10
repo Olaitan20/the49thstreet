@@ -35,7 +35,7 @@ export default function Magazine() {
       try {
         // First, try to find the uncovr category by exact slug
         const uncvrCategoryResponse = await fetch(
-          "http://staging.the49thstreet.com/wp-json/wp/v2/categories?slug=uncovr"
+          "https://staging.the49thstreet.com/wp-json/wp/v2/categories?slug=uncovr"
         );
 
         if (!uncvrCategoryResponse.ok) {
@@ -48,7 +48,7 @@ export default function Magazine() {
         // If not found by exact slug, try to search in all categories
         if (!category) {
           const allCategoriesResponse = await fetch(
-            "http://staging.the49thstreet.com/wp-json/wp/v2/categories"
+            "https://staging.the49thstreet.com/wp-json/wp/v2/categories"
           );
 
           if (allCategoriesResponse.ok) {
@@ -85,7 +85,7 @@ export default function Magazine() {
       // If we have the uncvr category ID, fetch its posts
       if (uncvrCategoryId) {
         const postsResponse = await fetch(
-          `http://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&categories=${uncvrCategoryId}&per_page=3&page=${pageNum}&orderby=date&order=desc`
+          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&categories=${uncvrCategoryId}&per_page=3&page=${pageNum}&orderby=date&order=desc`
         );
 
         if (postsResponse.ok) {
@@ -103,7 +103,7 @@ export default function Magazine() {
       // If no posts from uncvr category, get latest posts
       if (posts.length === 0) {
         const latestResponse = await fetch(
-          `http://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&per_page=3&page=${pageNum}&orderby=date&order=desc`
+          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&per_page=3&page=${pageNum}&orderby=date&order=desc`
         );
 
         if (latestResponse.ok) {

@@ -52,7 +52,7 @@ export default function Editorial() {
           const categoryId = categories[0].id;
 
           const postsResponse = await fetch(
-            `http://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&categories=${categoryId}&per_page=3&orderby=date&order=desc`
+            `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&categories=${categoryId}&per_page=3&orderby=date&order=desc`
           );
 
           if (postsResponse.ok) {
