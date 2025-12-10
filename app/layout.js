@@ -19,7 +19,7 @@ const bebasNeue = Bebas_Neue({
 
 export const metadata = {
   title: "The49thStreet",
-  description: "The 49th Streetb",
+  description: "The 49th Street",
 };
 
 export default function RootLayout({ children }) {
