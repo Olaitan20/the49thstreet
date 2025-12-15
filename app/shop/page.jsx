@@ -3,6 +3,7 @@ import { products } from "../../data/products";
 import React, { useState } from "react";
 import Image from "next/image";
 import Footer from "@/components/layout/Footer";
+import Headline from "@/components/layout/Headline";
 
 export default function ShopPage() {
   const [cart, setCart] = useState([]);
@@ -43,7 +44,9 @@ export default function ShopPage() {
 
   return (
     <section>
+      <Headline/>
     <div className="bg-white md:bg-transparent mb-8 md:mb-0 sm:mx-8 md:mx-12 lg:mx-16  ">
+      {/* <Headline/> */}
       {/* Header */}
       <div className="py-8 md:pb-8 px-4 md:px-0 flex justify-between items-center">
         <div>
@@ -59,7 +62,7 @@ export default function ShopPage() {
       </div>
 
       <div className="flex justify-center mb-8 items-center">
-            <div className="p-4  font-bold rounded-full bg-[#F26509]">
+            <div className="px-4 py-2  font-bold rounded-full bg-[#F26509]">
               <p>coming soon</p>
             </div>
           </div>

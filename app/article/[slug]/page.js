@@ -22,11 +22,59 @@ export default function ArticlePage() {
     return textarea.value;
   }, []);
 
+  // Extract slug from WordPress URL
+  const extractSlugFromUrl = useCallback((url) => {
+    if (!url || typeof url !== "string") return null;
+    
+    try {
+      const urlObj = new URL(url);
+      const pathname = urlObj.pathname;
+      
+      // Remove trailing slash and get the last part
+      const pathParts = pathname.replace(/\/$/, "").split("/");
+      return pathParts[pathParts.length - 1];
+    } catch (error) {
+      // If URL parsing fails, try to extract slug manually
+      const match = url.match(/\/([^\/]+)\/?$/);
+      return match ? match[1] : null;
+    }
+  }, []);
+
+  // Transform WordPress URLs to your new URL format
+  const transformWordPressUrls = useCallback((html) => {
+    if (!html) return "";
+    
+    // Regex to match WordPress URLs from your staging site
+    const wordPressUrlPattern = /https?:\/\/staging\.the49thstreet\.com\/([^\/\s]+)\/?/g;
+    
+    // Replace WordPress URLs with your new format
+    return html.replace(
+      /<a\s+(?:[^>]*?\s+)?href=["'](https?:\/\/staging\.the49thstreet\.com\/([^"'\s]+))["']([^>]*)>/gi,
+      (match, fullUrl, path, attributes) => {
+        // Extract the slug from the URL
+        const slugFromUrl = extractSlugFromUrl(fullUrl);
+        
+        if (slugFromUrl) {
+          // Transform to your new URL format
+          const newUrl = `/article/${slugFromUrl}`;
+          return `<a href="${newUrl}"${attributes}>`;
+        }
+        
+        // If we can't extract slug, return original
+        return match;
+      }
+    );
+  }, [extractSlugFromUrl]);
+
   // Process images in content - add custom classes and handle errors
   const processImagesInContent = useCallback((html) => {
     if (!html) return "";
     
-    return html.replace(
+    // First transform URLs
+    let processedHtml = transformWordPressUrls(html);
+    
+    // Then process images
+    processedHtml = processedHtml.replace(
       /<img([^>]*?)>/g,
       (match, attributes) => {
         // Check if class already exists
@@ -39,12 +87,14 @@ export default function ArticlePage() {
             'class="$1 article-content-image"'
           );
         } else {
-          // Add new class attribute - FIXED: escape quotes properly
+          // Add new class attribute
           return `<img${attributes} class="article-content-image" loading="lazy" onerror="this.src='/images/placeholder.jpg'; this.onerror=null;" />`;
         }
       }
     );
-  }, []);
+    
+    return processedHtml;
+  }, [transformWordPressUrls]);
 
   // "Time ago" formatter
   const getTimeAgo = useCallback((dateString) => {
@@ -87,22 +137,53 @@ export default function ArticlePage() {
     const addImageErrorHandlers = () => {
       const images = document.querySelectorAll(".article-content-image");
       images.forEach(img => {
-        // Remove any existing error handlers to avoid duplicates
         img.onerror = null;
-        // Add new error handler
         img.onerror = handleContentImageError;
         
-        // Ensure images have proper styling if inline styles were lost
         if (!img.classList.contains("article-content-image")) {
           img.classList.add("article-content-image");
         }
       });
     };
 
-    // Run after DOM updates
     const timer = setTimeout(addImageErrorHandlers, 100);
     return () => clearTimeout(timer);
   }, [article, handleContentImageError]);
+
+  // Handle link clicks for transformed URLs
+  useEffect(() => {
+    if (!article) return;
+
+    const handleLinkClick = (e) => {
+      const link = e.target.closest('a');
+      if (!link) return;
+
+      const href = link.getAttribute('href');
+      
+      // Check if it's an internal transformed link (starts with /article/)
+      if (href && href.startsWith('/article/')) {
+        e.preventDefault();
+        
+        // Extract slug from the href
+        const slugMatch = href.match(/^\/article\/([^\/]+)/);
+        if (slugMatch && slugMatch[1]) {
+          // Navigate to the article page
+          router.push(href);
+        }
+      }
+    };
+
+    const articleElement = document.getElementById('article');
+    if (articleElement) {
+      articleElement.addEventListener('click', handleLinkClick);
+    }
+
+    return () => {
+      if (articleElement) {
+        articleElement.removeEventListener('click', handleLinkClick);
+      }
+    };
+  }, [article, router]);
 
   // Fetch article data
   useEffect(() => {
@@ -297,7 +378,7 @@ export default function ArticlePage() {
           </p>
         </div>
 
-        {/* CONTENT WITH STYLED IMAGES */}
+        {/* CONTENT WITH STYLED IMAGES AND TRANSFORMED LINKS */}
         <div className="mx-4 md:mx-0 mb-8">
           <div
             id="article"
@@ -330,15 +411,37 @@ export default function ArticlePage() {
         <Footer />
       </div>
 
-      {/* Inline styles for additional image control - Using style tag directly */}
+      {/* Inline styles for additional image control */}
       <style>{`
-       #article p {
-        padding-bottom: 1rem;
+        #article p {
+          padding-bottom: 1rem;
         }
 
         #article a {
-        text-decoration: underline;
-        color:#F26509
+          text-decoration: underline;
+          color: #F26509;
+          cursor: pointer;
+          transition: color 0.2s ease;
+        }
+        
+        #article a:hover {
+          color: #ff8c42;
+        }
+        
+        /* Style for transformed WordPress links */
+        #article a[href^="/article/"] {
+          position: relative;
+        }
+        
+        #article a[href^="/article/"]:after {
+          content: " →";
+          opacity: 0;
+          transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        
+        #article a[href^="/article/"]:hover:after {
+          opacity: 1;
+          transform: translateX(2px);
         }
         
         /* Additional styling for article content images */

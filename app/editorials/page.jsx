@@ -250,9 +250,11 @@ export default function Page() {
 
       {/* No More Articles Message */}
       {!hasMore && !apiLoading && (
-        <div className="bg-black py-2 md:py-6 flex justify-center mt-2">
-          <p className="text-white/60 text-sm">No more articles to load</p>
-        </div>
+        <div className="flex justify-center mb-8 items-center">
+            <div className="px-4 py-2  font-bold rounded-full bg-[#F26509]">
+              <p>coming soon</p>
+            </div>
+          </div>
       )}
 
       {/* Error Message */}
