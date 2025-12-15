@@ -236,16 +236,16 @@ export default function Page() {
                 </p>
 
                 <div className="flex gap-1 sm:gap-0 flex-row items-center">
-                  <span className="text-[12px] text-black/50 font-medium">
+                  <span className="text-[12px] text-black/50 ">
                     {getAuthorName(article)}
                   </span>
-                  <span className="hidden sm:inline text-xs text-gray-400 mx-2">
+                  <span className="inline text-xs text-gray-400 sm:mx-1">
                     •
                   </span>
-                  <span className="text-[12px] text-black/50 font-medium">
+                  <span className="text-[12px] text-black/50 ">
                     {getCategoryName(article.categories)}
                   </span>
-                  <span className="hidden sm:inline text-xs text-gray-400 mx-2">
+                  <span className="inline text-xs text-gray-400 sm:mx-1">
                     •
                   </span>
                   <span className="text-[12px] text-black/50">

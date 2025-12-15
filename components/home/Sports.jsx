@@ -190,7 +190,7 @@ export default function Sports() {
     <div className="bg-white md:bg-transparent">
       <section className="mx-0 sm:mx-6 md:mx-8 lg:mx-16 pt-[24px] md:pt-0 md:mt-20">
         <div className="mb-4 md:mb-8 px-4 md:px-0">
-          <p className="text-[10px] md:text-[12px] uppercase mb-1 tracking-widest text-black md:text-white/50">
+          <p className="text-[12px] md:text-[12px] uppercase mb-1 tracking-widest text-black md:text-white/50">
             /// SPORTS
           </p>
           <p className="text-[14px] md:text-[16px] uppercase font-extrabold text-black md:text-white">
@@ -225,23 +225,22 @@ export default function Sports() {
               </div>
 
               <div className="p-4 md:p-6">
-                <p className="text-sm md:text-[16px] font-bold text-black mb-2 leading-tight truncate line-clamp-2">
+                <p className="text-sm md:text-[16px] font-bold text-black mb-2 truncate leading-tight line-clamp-2">
                   {article.title}
                 </p>
-                <div className="flex sm:flex-row sm:items-center gap-1 sm:gap-0">
-                  <span className="text-[12px] text-black/50 font-medium">
+
+                <div className="flex flex-row items-center gap-1">
+                  <span className="text-[12px] text-black/50 ">
                     {article.author}
                   </span>
-                  <span className="hidden sm:inline text-xs text-gray-400 mx-2">
-                    •
-                  </span>
-                  <span className="text-[12px] text-black/50 font-medium">
+                  <span className="text-xs text-gray-400">•</span>
+                  <span className="text-[12px] text-black/50 ">
                     {article.category}
                   </span>
-                  <span className="hidden sm:inline text-xs text-gray-400 mx-2">
-                    •
+                  <span className="text-xs text-gray-400">•</span>
+                  <span className="text-[12px] text-black/50">
+                    {article.time}
                   </span>
-                  <span className="text-[12px] text-black/50">{article.time}</span>
                 </div>
               </div>
             </div>

@@ -288,17 +288,18 @@ export default function Page() {
                 <p className="text-sm md:text-[16px] truncate font-bold text-black mb-3 leading-tight">
                   {article.title}
                 </p>
+                
                 <div className="flex truncate sm:flex-row sm:items-center gap-1 sm:gap-0">
-                  <span className="text-[12px] text-black/50 font-medium">
+                  <span className="text-[12px] text-black/50 ">
                     {article.author}
                   </span>
-                  <span className="hidden sm:inline text-xs text-gray-400 mx-2">
+                  <span className="inline text-xs text-gray-400 sm:mx-1 ">
                     •
                   </span>
-                  <span className="text-[12px] text-black/50 font-medium">
+                  <span className="text-[12px] text-black/50 ">
                     {article.category}
                   </span>
-                  <span className="hidden sm:inline text-xs text-gray-400 mx-2">
+                  <span className="inline text-xs text-gray-400 sm:mx-1">
                     •
                   </span>
                   <span className="text-[12px] text-black/50">

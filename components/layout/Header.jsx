@@ -57,7 +57,7 @@ export default function Header() {
                   }`}
                 />
                 <span
-                  className={`text-[11px] sm:text-[12px] md:text-[13px] tracking-tight ${
+                  className={`text-[12px] tracking-tight ${
                     isActive ? "text-white font-semibold" : "text-white/70"
                   }`}
                 >

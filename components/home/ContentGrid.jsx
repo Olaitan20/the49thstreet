@@ -137,7 +137,7 @@ export default function ContentGrid() {
       <section className="px-0 sm:px-6 md:px-8 lg:px-16 pt-[24px] md:pt-0 md:mt-20">
         {/* Header */}
         <div className="mb-4 md:mb-8 px-4 md:px-0">
-          <p className="text-[10px] md:text-[12px] uppercase mb-1 tracking-widest text-black md:text-white/50">
+          <p className="text-[12px] uppercase mb-1 tracking-widest text-black md:text-white/50">
             /// WHAT'S NEW
           </p>
           <p className="text-[14px] md:text-[16px] uppercase font-extrabold text-black md:text-white">
@@ -170,11 +170,11 @@ export default function ContentGrid() {
                 </p>
 
                 <div className="flex flex-row items-center gap-1">
-                  <span className="text-[12px] text-black/50 font-medium">
+                  <span className="text-[12px] text-black/50 ">
                     {article.author}
                   </span>
                   <span className="text-xs text-gray-400">•</span>
-                  <span className="text-[12px] text-black/50 font-medium">
+                  <span className="text-[12px] text-black/50 ">
                     {article.category}
                   </span>
                   <span className="text-xs text-gray-400">•</span>

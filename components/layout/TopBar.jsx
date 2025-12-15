@@ -43,9 +43,20 @@ const TopBar = () => {
         <div className="hidden md:flex items-center justify-between">
           <h2 className="text-base">{dateTime}</h2>
           
-          <h1 className="text-center font-bold text-xl tracking-tighter">
-            The 49TH STREET
-          </h1>
+             <Link 
+              href="/"
+              // target="_blank"
+              rel="noopener noreferrer"
+              className=""
+            >
+              <Image
+                src="./49thlogo.svg"
+                alt="49THSTREET"
+                width={120}
+                height={120}
+              />
+              
+            </Link>
 
           <div className="flex items-center gap-1 group">
             <Image
@@ -69,8 +80,8 @@ const TopBar = () => {
         {/* Mobile Layout */}
         <div className="md:hidden flex flex-col items-center gap-1">
           {/* Date and Title on same line */}
-          <div className="w-full flex items-center justify-between">
-            <h2 className="text-sm">{dateTime.split(' ')[0]} {dateTime.split(' ')[1]} {dateTime.split(' ')[2]}</h2>
+          <div className="w-full flex items-center  justify-between">
+            <h2 className="text-sm ">{dateTime.split(' ')[0]} {dateTime.split(' ')[1]} {dateTime.split(' ')[2]}</h2>
             
             <Link 
               href="https://open.spotify.com/playlist/5dwts9LXFfWNg5bTu00DWq?si=PxJEQpmlQF-EXMBOApHYEw&pi=e-cS_MGDaZQVuB"
@@ -90,9 +101,20 @@ const TopBar = () => {
           
           {/* Title and Time on second line */}
           <div className="w-full flex items-center justify-between">
-            <h1 className="font-bold text-lg tracking-tighter">
-              The 49TH STREET
-            </h1>
+             <Link 
+              href="/"
+              // target="_blank"
+              rel="noopener noreferrer"
+              className=""
+            >
+              <Image
+                src="./49thlogo.svg"
+                alt="49THSTREET"
+                width={100}
+                height={100}
+              />
+              
+            </Link>
             <h2 className="text-sm">{dateTime.split(' ')[3]}</h2>
           </div>
         </div>

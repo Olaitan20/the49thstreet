@@ -149,7 +149,7 @@ export default function Editorial() {
           <div className="mb-4 md:mb-8 px-4 md:px-0 flex items-center justify-between">
             <div>
               <p className="text-[12px] uppercase mb-1 tracking-widest text-black md:text-white/50">
-                /// 49TH EXCLUSIVE
+                /// More Articles
               </p>
               <p className="text-base md:text-[16px] uppercase font-extrabold text-black md:text-white">
                 FRESH OFF THE PRESS
@@ -193,8 +193,8 @@ export default function Editorial() {
         {/* Header */}
         <div className="mb-4 md:mb-8 px-4 md:px-0 flex items-center justify-between">
           <div>
-            <p className="text-[10px] md:text-[12px] uppercase mb-1 tracking-widest text-black md:text-white/50">
-              /// 49TH EXCLUSIVE
+            <p className="text-[12px] md:text-[12px] uppercase mb-1 tracking-widest text-black md:text-white/50">
+              /// More Articles
             </p>
             <p className="text-[14px] md:text-[16px] uppercase font-extrabold text-black md:text-white">
               FRESH OFF THE PRESS
@@ -204,7 +204,7 @@ export default function Editorial() {
           <button
             onClick={handleSeeAll}
             disabled={loading}
-            className="flex items-center justify-center gap-2 text-[12px] md:text-[14px] font-semibold text-white bg-black border border-black rounded-full px-4 py-1.5 disabled:opacity-60"
+            className="flex items-center justify-center gap-2 text-[12px] md:text-[14px]  text-white bg-black border border-black rounded-full px-4 py-1.5 disabled:opacity-60"
           >
             {loading ? (
               <>
@@ -238,7 +238,7 @@ export default function Editorial() {
                   {article.title}
                 </p>
 
-                <div className="mt-2 flex items-center flex-wrap gap-1 text-[11px] text-black/60 md:text-white/60">
+                <div className="mt-2 flex items-center flex-wrap gap-1 text-[12px] text-black/60 md:text-white/60">
                   <span>{article.author}</span>
                   <span>•</span>
                   <span>{article.category}</span>

@@ -271,7 +271,7 @@ export default function ArticlePage() {
       {/* MAIN CONTENT */}
       <div className="px-0 sm:px-6 md:px-8 lg:px-16 py-2">
         {/* FEATURED IMAGE */}
-        <div className="w-full h-[60vh] md:h-[85vh] relative mb-6 overflow-hidden">
+        <div className="w-full h-[60vh] md:h-[85vh] -mt-2 relative mb-6 overflow-hidden">
           <img
             src={article.image}
             alt={stripHtml(article.title)}
@@ -284,7 +284,7 @@ export default function ArticlePage() {
 
         {/* META */}
         <div className="mx-4 md:mx-0">
-          <p className="uppercase text-[10px] md:text-[12px] text-white/50 mb-2">
+          <p className="uppercase text-[12px] md:text-[12px] text-white/50 mb-2">
             {"///"} {article.category}
           </p>
 
@@ -292,14 +292,15 @@ export default function ArticlePage() {
             {stripHtml(article.title)}
           </h1>
 
-          <p className="text-[10px] md:text-[12px] text-white/60 mb-10">
+          <p className="text-[12px] uppercase md:text-[12px] text-white/60 mb-6">
             {article.author} • {article.date} • {article.time}
           </p>
         </div>
 
         {/* CONTENT WITH STYLED IMAGES */}
-        <div className="mx-4 md:mx-0 mb-12">
+        <div className="mx-4 md:mx-0 mb-8">
           <div
+            id="article"
             className="text-[14px] md:text-[16px] text-justify leading-relaxed font-[200] prose prose-invert max-w-none
             prose-headings:text-white prose-p:text-gray-300 prose-p:mb-6
             prose-ul:text-gray-300 prose-ol:text-gray-300 prose-li:mb-1
@@ -321,7 +322,7 @@ export default function ArticlePage() {
         </div>
 
         {/* RELATED CONTENT */}
-        <div className="px-0 mt-8">
+        <div className="px-0 md:my-8">
           <Editorial />
         </div>
 
@@ -331,6 +332,15 @@ export default function ArticlePage() {
 
       {/* Inline styles for additional image control - Using style tag directly */}
       <style>{`
+       #article p {
+        padding-bottom: 1rem;
+        }
+
+        #article a {
+        text-decoration: underline;
+        color:#F26509
+        }
+        
         /* Additional styling for article content images */
         .article-content-image {
           transition: transform 0.3s ease, opacity 0.3s ease;

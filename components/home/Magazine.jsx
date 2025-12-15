@@ -359,13 +359,13 @@ export default function Magazine() {
             {/* Caption + mobile arrows */}
             <div className="bg-black py-3 px-4 flex justify-between items-center">
               <div>
-                <p className="text-[11px] uppercase tracking-widest text-white/50">
+                <p className="text-[12px] uppercase tracking-widest text-white/50">
                   // uncvr
                 </p>
-                <p className="text-[14px] font-bold  text-white mt-1">
+                <p className="text-[14px] font-bold  text-white mt-2">
                   {displayMagazines[currentIndex].title}
                 </p>
-                <p className="text-[11px] uppercase  text-white/60 mt-1 tracking-widest">
+                <p className="text-[12px] uppercase  text-white/60 mt-2 tracking-widest">
                   {displayMagazines[currentIndex].issue}
                 </p>
                 
@@ -443,13 +443,13 @@ export default function Magazine() {
               />
             </div>
             <div className="bg-black px-2 py-3 text-left">
-              <p className="text-[11px] uppercase tracking-widest text-white/50">
+              <p className="text-[12px] uppercase tracking-widest text-white/50">
                 // uncvr
               </p>
-              <p className="text-[15px] font-bold text-white mt-1">
+              <p className="text-[12px] font-bold text-white mt-1">
                 {mag.title}
               </p>
-              <p className="text-[11px] uppercase text-white/60 mt-1 tracking-widest">
+              <p className="text-[12px] uppercase text-white/60 mt-1 tracking-widest">
                 {mag.issue}
               </p>
               {/* Article Slug */}

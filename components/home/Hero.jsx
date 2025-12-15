@@ -251,13 +251,13 @@ export default function Hero() {
 
               {/* Captions BELOW the image */}
               <div className="p-2 mt-4 mb-6 space-y-2 md:mb-0">
-                <p className="text-[10px]  uppercase tracking-widest text-white/50 mb-[8px]">
+                <p className="text-[12px]  uppercase tracking-widest text-white/50 mb-[8px]">
                   {featuredPosts[index].subtitle}
                 </p>
                 <p className="text-[16px] md:text-[16px] truncate font-semibold">
                   {featuredPosts[index].title}
                 </p>
-                <p className="text-[10px]  mt-[8px] text-white/50">
+                <p className="text-[12px]  mt-[8px] text-white/50">
                   {featuredPosts[index].details}
                 </p>
               </div>

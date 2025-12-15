@@ -93,7 +93,7 @@ export default function Headline() {
           {/* Label: What's Hot? */}
           <div className="absolute left-0 top-0 h-full flex items-center gap-1 px-3 bg-gray-100 z-10">
             <Image src="/icons/fire.png" alt="Fire Icon" width={20} height={20} />
-            <p className="uppercase text-xs font-medium">What's Hot?</p>
+            <p className="uppercase text-xs font-bold">What's Hot?</p>
           </div>
 
           {/* Loading skeleton */}
@@ -115,13 +115,13 @@ export default function Headline() {
         {/* Label: What's Hot? */}
         <div className="absolute left-0 top-0 h-full flex items-center gap-1 px-3 bg-gray-100 z-10">
           <Image src="/icons/fire.png" alt="Fire Icon" width={20} height={20} />
-          <p className="uppercase text-xs font-medium">What's Hot?</p>
+          <p className="uppercase text-xs font-bold">What's Hot?</p>
         </div>
 
         {/* Marquee Content */}
         <div
           ref={containerRef}
-          className="flex gap-6 text-xs font-normal text-gray-600 marquee whitespace-nowrap pl-28"
+          className="flex gap-6 text-[12px] font-normal text-gray-600 marquee whitespace-nowrap pl-28"
         >
           {/* Content is populated via useEffect */}
         </div>

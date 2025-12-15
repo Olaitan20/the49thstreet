@@ -39,11 +39,11 @@
    --sidebar-ring: oklch(0.708 0 0);
 }
 
-p, li, a, input, span{
+p, li, a, input, span, button{
   font-family: var(--font-inter), sans-serif;
 }
 
-h1, h2, h3, h4, button{
+h1, h2, h3, h4{
   font-family: var(--font-bebas-neue), sans-serif;
 }
 

@@ -193,54 +193,13 @@ export default function OrangeMagPage() {
             animate="visible"
             variants={fadeUp}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-0"
+            className=""
           >
-            {magazines.map((mag, index) => (
-              <motion.div
-                key={mag.id}
-                variants={fadeUp}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.2 }}
-                custom={index * 0.2}
-                whileHover={{ y: -6, scale: 1.02 }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
-                onClick={() => handleMagazineClick(mag.slug)}
-                className="cursor-pointer group"
-              >
-                {/* Image section (tight edge-to-edge) */}
-                <div className="relative w-full h-[420px] sm:h-[480px] overflow-hidden">
-                  {/* Use regular img tag for external images */}
-                  <img
-                    src={mag.src}
-                    alt={mag.title}
-                    className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105"
-                    onError={(e) => {
-                      const localImages = [
-                        "/images/magazine.png",
-                        "/images/magazine2.png",
-                        "/images/magazine.png",
-                      ];
-                      const randomLocal = localImages[index % localImages.length];
-                      e.target.src = randomLocal;
-                      e.target.onerror = null;
-                    }}
-                  />
-                </div>
-                {/* Magazine info */}
-                <div className="bg-black px-2 py-3 text-left">
-                  <p className="text-[11px] uppercase tracking-widest text-white/50">
-                    // uncvr
-                  </p>
-                  <p className="text-[15px] font-bold text-white mt-1">
-                    {mag.title}
-                  </p>
-                  <p className="text-[11px] uppercase text-white/60 mt-1 tracking-widest">
-                    {mag.issue}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
+           <div className="flex justify-center items-center">
+            <div className="p-4  font-medium capitalize rounded-full bg-[#F26509]">
+              <p>coming soon</p>
+            </div>
+          </div>
           </motion.div>
         )}
         {/* <Editorial/> */}
