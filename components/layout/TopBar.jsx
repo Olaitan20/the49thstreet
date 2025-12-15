@@ -43,20 +43,9 @@ const TopBar = () => {
         <div className="hidden md:flex items-center justify-between">
           <h2 className="text-base">{dateTime}</h2>
           
-             <Link 
-              href="/"
-              // target="_blank"
-              rel="noopener noreferrer"
-              className=""
-            >
-              <Image
-                src="./49thlogo.svg"
-                alt="49THSTREET"
-                width={120}
-                height={120}
-              />
-              
-            </Link>
+          <h1 className="text-center font-bold text-xl tracking-tighter">
+            The 49TH STREET
+          </h1>
 
           <div className="flex items-center gap-1 group">
             <Image
@@ -101,20 +90,9 @@ const TopBar = () => {
           
           {/* Title and Time on second line */}
           <div className="w-full flex items-center justify-between">
-             <Link 
-              href="/"
-              // target="_blank"
-              rel="noopener noreferrer"
-              className=""
-            >
-              <Image
-                src="./49thlogo.svg"
-                alt="49THSTREET"
-                width={100}
-                height={100}
-              />
-              
-            </Link>
+            <h1 className="font-bold text-lg tracking-tighter">
+              The 49TH STREET
+            </h1>
             <h2 className="text-sm">{dateTime.split(' ')[3]}</h2>
           </div>
         </div>

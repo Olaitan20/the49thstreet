@@ -229,7 +229,7 @@ export default function Latest() {
                 Loading...
               </>
             ) : (
-              "load More"
+              "Load More"
             )}
           </button>
         </div>
