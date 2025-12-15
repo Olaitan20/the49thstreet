@@ -213,7 +213,7 @@ export default function Hero() {
   }
 
   return (
-    <div className="mx-0 sm:mx-6 md:mx-8 lg:mx-16 md:mt-1 flex gap-4 text-white">
+    <div className="mx-0 sm:mx-6 md:mx-8 lg:mx-16  flex gap-4 text-white">
       {/* Left: Slideshow (3/4 width on desktop) */}
       <div
         className="relative w-full md:w-3/4 overflow-hidden"

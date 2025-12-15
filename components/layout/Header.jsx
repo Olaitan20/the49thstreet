@@ -6,12 +6,13 @@ import Image from "next/image";
 const navItems = [
   { id: "feed", label: "Feed", icon: "/icons/feed.svg", href: "/" },
   { id: "orange-mag", label: "Orange Mag", icon: "/icons/orange-mag.svg", href: "/orange-mag" },
+  { id: "editorials", label: "Editorials", icon: "/icons/editorials.svg", href: "/editorials" },
   { id: "music", label: "Music", icon: "/icons/music.svg", href: "/music" },
   { id: "fashion", label: "Fashion", icon: "/icons/fashion.svg", href: "/fashion" },
   { id: "sports", label: "Sports", icon: "/icons/sport.svg", href: "/sports" },
   { id: "news", label: "News", icon: "/icons/news.svg", href: "/news" },
   { id: "lifestyle", label: "Lifestyle", icon: "/icons/lifestyle.svg", href: "/lifestyle" },
-  { id: "tech", label: "Tech", icon: "/icons/tech.svg", href: "/tech" },
+  { id: "trivia", label: "Trivia", icon: "/icons/trivia.svg", href: "/trivia" },
   { id: "creative-hub", label: "Creative Hub", icon: "/icons/creative.svg", href: "/creative-hub" },
   { id: "shop", label: "Shop", icon: "/icons/shop.svg", href: "/shop" },
 ];
@@ -24,7 +25,7 @@ export default function Header() {
       <ul
         className="
           flex items-center
-          gap-x-5 sm:gap-x-6 md:gap-x-8 lg:gap-x-10
+          gap-x-5 sm:gap-x-6 md:gap-x-8 
           overflow-x-auto
           md:overflow-x-auto
           whitespace-nowrap

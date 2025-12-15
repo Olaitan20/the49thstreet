@@ -240,10 +240,10 @@ export default function Magazine() {
         <div className="flex items-center justify-between py-6 px-4 md:px-0">
           <div>
             <p className="text-[12px] uppercase mb-2 tracking-widest text-white/50">
-              /// UNCVR
+              /// UNCOVR
             </p>
             <p className="text-[16px] uppercase font-extrabold text-white">
-              Read UNCVR Mag
+              Read UNCOVR 
             </p>
           </div>
         </div>
@@ -287,10 +287,10 @@ export default function Magazine() {
       <div className="flex items-center justify-between py-6 px-4 md:px-0">
         <div>
           <p className="text-[12px] uppercase mb-2 tracking-widest text-white/50">
-            /// UNCVR
+            /// UNCOVR
           </p>
           <p className="text-[16px] uppercase font-extrabold text-white">
-            Read UNCVR
+            Read UNCOVR
           </p>
         </div>
 

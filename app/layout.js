@@ -2,7 +2,6 @@ import { Inter, Bebas_Neue } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import TopBar from "@/components/layout/TopBar";
-import PageLoader from "@/components/PageLoader"; // 👈 import the loader
 
 const inter = Inter({
   subsets: ["latin"],
@@ -20,22 +19,26 @@ const bebasNeue = Bebas_Neue({
 export const metadata = {
   title: "The49thStreet",
   description: "The 49th Street",
+  icons: {
+    icon: "/logo.png",
+  },
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <head>
+        {/* Force favicon to load in all browsers */}
+        <link rel="icon" href="/logo.png" sizes="any" />
+        <link rel="shortcut icon" href="/logo.png" />
+        <link rel="apple-touch-icon" href="/logo.png" />
+      </head>
+
       <body className={`${inter.variable} ${bebasNeue.variable}`}>
         <TopBar />
         <Header />
-        
-        {/* Wrap pages with loader */}
-        {/* <PageLoader> */}
-          {children}
-        {/* </PageLoader> */}
+        {children}
       </body>
     </html>
   );
 }
-
-
