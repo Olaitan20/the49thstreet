@@ -62,7 +62,7 @@ export default function ShopPage() {
       </div>
 
       <div className="flex justify-center mb-8 items-center">
-            <div className="px-4 py-2  font-bold rounded-full bg-[#F26509]">
+            <div className="px-4 py-2  font-normal rounded-full bg-[#F26509]">
               <p>coming soon</p>
             </div>
           </div>

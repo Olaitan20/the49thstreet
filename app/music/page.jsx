@@ -290,7 +290,7 @@ export default function Page() {
                 {article.title}
               </p>
               <div className="flex flex-wrap items-center gap-1">
-                <span className="text-[12px] text-black/50 ">{article.author}</span>
+                <span className="text-[12px] text-black/50 ">{article.author?.toUpperCase()}</span>
                 <span className="text-xs text-gray-400">•</span>
                 <span className="text-[12px] text-black/50 ">{article.category}</span>
                 <span className="text-xs text-gray-400">•</span>

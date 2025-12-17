@@ -352,11 +352,11 @@ export default function ArticlePage() {
       {/* MAIN CONTENT */}
       <div className="px-0 sm:px-6 md:px-8 lg:px-16 py-2">
         {/* FEATURED IMAGE */}
-        <div className="w-full h-[60vh] md:h-[85vh] -mt-2 relative mb-6 overflow-hidden">
+        <div className="w-full h-[40vh] md:h-[85vh] -mt-2 relative mb-6 overflow-hidden">
           <img
             src={article.image}
             alt={stripHtml(article.title)}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain md:object-cover"
             onError={handleImageError}
             loading="lazy"
             decoding="async"
@@ -374,7 +374,7 @@ export default function ArticlePage() {
           </h1>
 
           <p className="text-[12px] uppercase md:text-[12px] text-white/60 mb-6">
-            {article.author} • {article.date} • {article.time}
+            {article.author?.toUpperCase()} • {article.date} • {article.time}
           </p>
         </div>
 
@@ -392,7 +392,7 @@ export default function ArticlePage() {
             [&_.article-content-image]:w-full [&_.article-content-image]:h-auto 
             [&_.article-content-image]:my-6 [&_.article-content-image]:rounded-lg 
             [&_.article-content-image]:max-w-full [&_.article-content-image]:object-contain
-            [&_.article-content-image]:mx-auto [&_.article-content-image]:block
+            [&_.article-content-image]:block
             [&_figure]:my-8 [&_figure]:mx-auto [&_figure]:max-w-full
             [&_figcaption]:text-center [&_figcaption]:text-gray-400 
             [&_figcaption]:text-sm [&_figcaption]:mt-2"
@@ -416,6 +416,9 @@ export default function ArticlePage() {
         #article p {
           padding-bottom: 1rem;
         }
+        #article h3 {
+        
+          font-size: 25 px;}
 
         #article a {
           text-decoration: underline;

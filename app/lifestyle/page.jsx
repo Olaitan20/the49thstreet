@@ -180,7 +180,7 @@ export default function Page() {
                   </p>
                   <div className="flex sm:flex-row sm:items-center gap-1 sm:gap-0">
                     <span className="text-[12px] text-black/50 ">
-                      {article.author}
+                      {article.author?.toUpperCase()}
                     </span>
                     <span className="inline text-xs text-gray-400 sm:mx-1">
                       •

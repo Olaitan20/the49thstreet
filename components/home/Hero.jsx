@@ -278,7 +278,7 @@ export default function Hero() {
               {item.title}
             </p>
             <p className="text-[10px] text-white/50 mt-[8px]">
-              {item.author} • {item.category} • {item.time}
+              {item.author?.toUpperCase()} • {item.category} • {item.time}
             </p>
           </div>
         ))}

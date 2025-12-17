@@ -338,23 +338,23 @@ export default function Magazine() {
             onClick={() => handleMagazineClick(displayMagazines[currentIndex].slug)}
             className="cursor-pointer group"
           >
-            <div className="relative  h-[520px]  overflow-hidden">
-              <img
-                src={displayMagazines[currentIndex].src}
-                alt={displayMagazines[currentIndex].title}
-                className="w-full h-[57vh] object-cover  transform transition-transform duration-700 group-hover:scale-105"
-                onError={(e) => {
-                  const localImages = [
-                    "/images/magazine.png",
-                    "/images/magazine2.png",
-                    "/images/magazine.png",
-                  ];
-                  const randomLocal = localImages[currentIndex % localImages.length];
-                  e.target.src = randomLocal;
-                  e.target.onerror = null;
-                }}
-              />
-            </div>
+            <div className="relative w-full h-64 md:h-80 lg:h-96 overflow-hidden">
+  <img
+    src={displayMagazines[currentIndex].src}
+    alt={displayMagazines[currentIndex].title}
+    className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105"
+    onError={(e) => {
+      const localImages = [
+        "/images/magazine.png",
+        "/images/magazine2.png",
+        "/images/magazine.png",
+      ];
+      const randomLocal = localImages[currentIndex % localImages.length];
+      e.target.src = randomLocal;
+      e.target.onerror = null;
+    }}
+  />
+</div>
 
             {/* Caption + mobile arrows */}
             <div className="bg-black py-3 px-4 flex justify-between items-center">

@@ -196,7 +196,7 @@ export default function OrangeMagPage() {
             className=""
           >
            <div className="flex justify-center items-center">
-            <div className="px-4 py-2  font-medium capitalize rounded-full bg-[#F26509]">
+            <div className="px-4 py-2  font-normal capitalize rounded-full bg-[#F26509]">
               <p>coming soon</p>
             </div>
           </div>

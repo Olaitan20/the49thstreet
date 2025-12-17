@@ -205,7 +205,7 @@ export default function Sports() {
               className="bg-white hover:shadow-lg transition-shadow cursor-pointer group"
               onClick={() => router.push(`/article/${article.slug}`)} 
             >
-              <div className="w-full h-48 md:h-48 lg:h-50 overflow-hidden">
+              <div className="w-full aspect-video overflow-hidden">
                 <img
                   src={article.image}
                   alt={article.title}
@@ -231,7 +231,7 @@ export default function Sports() {
 
                 <div className="flex flex-row items-center gap-1">
                   <span className="text-[12px] text-black/50 ">
-                    {article.author}
+                    {article.author?.toUpperCase()}
                   </span>
                   <span className="text-xs text-gray-400">•</span>
                   <span className="text-[12px] text-black/50 ">

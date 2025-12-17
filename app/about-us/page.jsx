@@ -9,7 +9,7 @@ const AboutPage = () => {
     <div className="min-h-screen">
       {/* Hero Section */}
       <section className="relative text-white pt-6 px-4">
-        <div className="container mx-auto max-w-6xl text-center">
+        <div className="container mx-auto max-w-6xl text-left">
           <h1 className="text-5xl md:text-6xl font-bold mb-4">About Us</h1>
           <p className="text-[12px]">
             The street to everything African creativity
@@ -20,18 +20,18 @@ const AboutPage = () => {
       {/* Who We Are Section */}
       <section className="pt-6 px-4">
         <div className="container mx-auto max-w-6xl">
-          <h2 className="text-3xl md:text-4xl font-bold text-[#F26509] mb-6 text-center">Who We Are</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-[#F26509] mb-6 text-left">Who We Are</h2>
           
           <div className="md:grid mb-6 md:grid-cols-2 gap-12 items-center">
-            <div className="text-center md:text-left">
-              <p className="text-[13px] md:text-[15px] leading-relaxed mb-6">
+            <div className="text-left">
+              <p className="text-[12px] leading-relaxed mb-6">
                 We are the street to everything African creativity. Our brand is African, by Africans and for Africans. 
                 Here we bring to you, the best of African music, fashion, art and culture.
               </p>
             </div>
             
-            <div className="text-center md:text-left">
-              <p className="text-[13px] md:text-[15px] leading-relaxed mb-2">
+            <div className="text-left">
+              <p className="text-[12px] leading-relaxed mb-2">
                 49th Street (formerly known as 7th Street) was established in September 2019 to be an all-round Media, 
                 Entertainment and Advertising agency committed to spotlighting and documenting underground African 
                 creatives and the achievements of Africans all around the world.

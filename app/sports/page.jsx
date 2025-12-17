@@ -166,7 +166,7 @@ export default function Page() {
                 <div className="p-4 md:p-6">
                   <p className="text-sm md:text-[16px] font-bold truncate text-black mb-3 leading-tight">{article.title}</p>
                   <div className="flex sm:flex-row sm:items-center gap-1 sm:gap-0">
-                    <span className="text-[12px] text-black/50 ">{article.author}</span>
+                    <span className="text-[12px] text-black/50 ">{article.author?.toUpperCase()}</span>
                     <span className="inline text-xs text-gray-400 sm:mx-1">•</span>
                     <span className="text-[12px] text-black/50 ">{article.category}</span>
                     <span className="inline text-xs text-gray-400 sm:mx-1">•</span>

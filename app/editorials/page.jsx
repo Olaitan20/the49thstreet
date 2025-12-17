@@ -208,7 +208,7 @@ export default function Page() {
                   </p>
                   <div className="flex sm:flex-row sm:items-center gap-1 sm:gap-0">
                     <span className="text-[12px] text-black/50 font-medium">
-                      {article.author}
+                      {article.author?.toUpperCase()}
                     </span>
                     <span className="hidden sm:inline text-xs text-gray-400 mx-2">
                       •
@@ -251,7 +251,7 @@ export default function Page() {
       {/* No More Articles Message */}
       {!hasMore && !apiLoading && (
         <div className="flex justify-center mb-8 items-center">
-            <div className="px-4 py-2  font-bold rounded-full bg-[#F26509]">
+            <div className="px-4 py-2  font-normal rounded-full bg-[#F26509]">
               <p>coming soon</p>
             </div>
           </div>

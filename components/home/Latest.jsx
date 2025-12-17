@@ -184,7 +184,7 @@ export default function Latest() {
               className="bg-white hover:shadow-lg transition-all cursor-pointer group"
               onClick={() => router.push(`/article/${article.slug}`)}
             >
-              <div className="w-full h-48 overflow-hidden">
+              <div className="w-full aspect-video  overflow-hidden">
                 <img
                   src={article.image}
                   alt={article.title}
@@ -200,7 +200,7 @@ export default function Latest() {
 
                 <div className="flex flex-row items-center gap-1">
                   <span className="text-[12px] text-black/50 ">
-                    {article.author}
+                    {article.author?.toUpperCase()}
                   </span>
                   <span className="text-xs text-gray-400">•</span>
                   <span className="text-[12px] text-black/50 ">

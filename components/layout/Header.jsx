@@ -21,11 +21,11 @@ export default function Header() {
   const pathname = usePathname();
 
   return (
-    <nav className="w-full px-3 sm:px-6 md:px-8 lg:px-24 py-2">
+    <nav className="sticky z-40 top-16 md:top-10 md:z-40 w-full px-3 sm:px-6 md:px-8 lg:px-24 py-2 bg-black/60 backdrop-blur-md border-b border-white/5">
       <ul
         className="
           flex items-center
-          gap-x-5 sm:gap-x-6 md:gap-x-8 
+          gap-x-5 sm:gap-x-6 md:gap-x-16 
           overflow-x-auto
           md:overflow-x-auto
           whitespace-nowrap

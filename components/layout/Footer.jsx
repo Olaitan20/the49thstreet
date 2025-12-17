@@ -58,10 +58,10 @@ export default function Footer() {
               >
                 About
               </Link>
-              <a href="#" className="hover:text-white uppercase text-[11px] transition">
+              <a href="mailto:info@the49thstreet.com" className="hover:text-white uppercase text-[11px] transition">
                 Contact Us
               </a>
-              <a href="#" className="hover:text-white uppercase text-[11px] transition">
+              <a href="mailto:info@the49thstreet.com" className="hover:text-white uppercase text-[11px] transition">
                 Submissions
               </a>
             </div>

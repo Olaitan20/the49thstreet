@@ -151,7 +151,7 @@ export default function Editorial() {
               <p className="text-[12px] uppercase mb-1 tracking-widest text-black md:text-white/50">
                 /// More Articles
               </p>
-              <p className="text-base md:text-[16px] uppercase font-extrabold text-black md:text-white">
+              <p className="text-[14px] md:text-[16px] uppercase font-extrabold text-black md:text-white">
                 FRESH OFF THE PRESS
               </p>
             </div>
@@ -193,7 +193,7 @@ export default function Editorial() {
         {/* Header */}
         <div className="mb-4 md:mb-8 px-4 md:px-0 flex items-center justify-between">
           <div>
-            <p className="text-[12px] md:text-[12px] uppercase mb-1 tracking-widest text-black md:text-white/50">
+            <p className="text-[12px]  uppercase mb-1 tracking-widest text-black md:text-white/50">
               /// More Articles
             </p>
             <p className="text-[14px] md:text-[16px] uppercase font-extrabold text-black md:text-white">
@@ -223,7 +223,7 @@ export default function Editorial() {
             <div
               key={article.id}
               className="transition cursor-pointer group flex items-center hover:opacity-80"
-              onClick={() => router.push(`/article/${article.slug}`)} // ✅ FIXED ROUTE
+              onClick={() => router.push(`/article/${article.slug}`)} 
             >
               <div className="w-24 h-24 flex-shrink-0 overflow-hidden">
                 <img
@@ -234,12 +234,12 @@ export default function Editorial() {
               </div>
 
               <div className="ml-4 flex flex-col justify-between">
-                <p className="text-sm md:text-[15px] font-bold text-black md:text-white leading-tight line-clamp-2">
+                <p className="text-[14px]  font-bold text-black md:text-white leading-tight line-clamp-2">
                   {article.title}
                 </p>
 
-                <div className="mt-2 flex items-center flex-wrap gap-1 text-[12px] text-black/60 md:text-white/60">
-                  <span>{article.author}</span>
+                <div className="mt-4 flex items-center flex-wrap gap-1 text-[12px] text-black/60 md:text-white/60">
+                  <span>{article.author?.toUpperCase()}</span>
                   <span>•</span>
                   <span>{article.category}</span>
                   <span>•</span>
