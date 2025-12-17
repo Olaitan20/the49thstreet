@@ -5,6 +5,58 @@ import Editorial from "@/components/home/Editoral";
 import Footer from "@/components/layout/Footer";
 import Headline from "@/components/layout/Headline";
 
+// Share Button Component
+function ShareButton({ article }) {
+  const [isCopied, setIsCopied] = useState(false);
+
+  const shareUrl = typeof window !== "undefined" ? window.location.href : "";
+  const title = article?.title || "Check out this article";
+
+  const handleNativeShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: title,
+          text: `Read: ${title}`,
+          url: shareUrl,
+        });
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          console.error("Error sharing:", err);
+        }
+      }
+    }
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(shareUrl);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  return (
+    <div className="flex flex-col gap-2 md:gap-2 md:w-auto md:flex-row md:items-start md:pt-1">
+      <button
+        onClick={handleCopyLink}
+        className="text-[11px] px-3 py-2 rounded bg-white/10 hover:bg-white/20 transition text-white whitespace-nowrap"
+        title="Copy link"
+      >
+        {isCopied ? "✓ Copied" : "Copy Link"}
+      </button>
+      
+      {navigator.share && (
+        <button
+          onClick={handleNativeShare}
+          className="text-[11px] px-3 py-2 rounded bg-white/10 hover:bg-white/20 transition text-white whitespace-nowrap"
+          title="Share"
+        >
+          ↗ Share
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function ArticlePage() {
   const params = useParams();
   const slug = params.slug;
@@ -369,13 +421,20 @@ export default function ArticlePage() {
             {"///"} {article.category}
           </p>
 
-          <h1 className="text-xl md:text-[40px] font-extrabold mb-4 md:mb-6 leading-tight">
-            {stripHtml(article.title)}
-          </h1>
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between md:gap-4">
+            <div className="flex-1">
+              <h1 className="text-xl md:text-[40px] font-extrabold mb-4 md:mb-6 leading-tight">
+                {stripHtml(article.title)}
+              </h1>
 
-          <p className="text-[12px] uppercase md:text-[12px] text-white/60 mb-6">
-            {article.author?.toUpperCase()} • {article.date} • {article.time}
-          </p>
+              <p className="text-[12px] uppercase md:text-[12px] text-white/60 mb-6">
+                {article.author?.toUpperCase()} • {article.date} • {article.time}
+              </p>
+            </div>
+
+            {/* Share Button */}
+            <ShareButton article={article} />
+          </div>
         </div>
 
         {/* CONTENT WITH STYLED IMAGES AND TRANSFORMED LINKS */}
@@ -390,7 +449,7 @@ export default function ArticlePage() {
             prose-strong:text-white prose-em:text-gray-300
             prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg
             [&_.article-content-image]:w-full [&_.article-content-image]:h-auto 
-            [&_.article-content-image]:my-6 [&_.article-content-image]:rounded-lg 
+            [&_.article-content-image]:my-6 [&_.article-content-image]:
             [&_.article-content-image]:max-w-full [&_.article-content-image]:object-contain
             [&_.article-content-image]:block
             [&_figure]:my-8 [&_figure]:mx-auto [&_figure]:max-w-full
@@ -458,29 +517,69 @@ export default function ArticlePage() {
           transform: scale(1.01);
           opacity: 0.95;
         }
+
+        /* Side by side images on desktop */
+        @media (min-width: 768px) {
+          .article-content-image + .article-content-image {
+            display: inline-block;
+            width: calc(50% - 0.75rem);
+            margin-left: 1.5rem;
+            margin-right: 0;
+            vertical-align: top;
+          }
+          
+          .article-content-image {
+            display: inline-block;
+            width: calc(50% - 0.75rem);
+            margin-right: 1.5rem;
+          }
+
+          /* Reset every other pair */
+          .article-content-image:nth-of-type(4n+1) {
+            clear: left;
+            display: block;
+            width: 100%;
+            margin-right: 0;
+            margin-left: 0;
+          }
+
+          .article-content-image:nth-of-type(4n+2) {
+            display: inline-block;
+            width: calc(50% - 0.75rem);
+            margin-right: 1.5rem;
+            margin-left: 0;
+          }
+
+          .article-content-image:nth-of-type(4n+3) {
+            display: inline-block;
+            width: calc(50% - 0.75rem);
+            margin-left: 1.5rem;
+            margin-right: 0;
+          }
+        }
         
         /* Responsive image sizing */
         @media (min-width: 640px) {
           .article-content-image {
-            max-width: 90% !important;
+            max-width: 75% !important;
           }
         }
         
         @media (min-width: 768px) {
           .article-content-image {
-            max-width: 80% !important;
+            max-width: 65% !important;
           }
         }
         
         @media (min-width: 1024px) {
           .article-content-image {
-            max-width: 70% !important;
+            max-width: 55% !important;
           }
         }
         
         @media (min-width: 1280px) {
           .article-content-image {
-            max-width: 60% !important;
+            max-width: 45% !important;
           }
         }
       `}</style>
