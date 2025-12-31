@@ -4,58 +4,9 @@ import { useParams, useRouter } from "next/navigation";
 import Editorial from "@/components/home/Editoral";
 import Footer from "@/components/layout/Footer";
 import Headline from "@/components/layout/Headline";
+import ShareBar from "@/components/ui/ShareBar";
 
-// Share Button Component
-function ShareButton({ article }) {
-  const [isCopied, setIsCopied] = useState(false);
 
-  const shareUrl = typeof window !== "undefined" ? window.location.href : "";
-  const title = article?.title || "Check out this article";
-
-  const handleNativeShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: title,
-          text: `Read: ${title}`,
-          url: shareUrl,
-        });
-      } catch (err) {
-        if (err.name !== "AbortError") {
-          console.error("Error sharing:", err);
-        }
-      }
-    }
-  };
-
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(shareUrl);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
-  };
-
-  return (
-    <div className="flex flex-col gap-2 md:gap-2 md:w-auto md:flex-row md:items-start md:pt-1">
-      <button
-        onClick={handleCopyLink}
-        className="text-[11px] px-3 py-2 rounded bg-white/10 hover:bg-white/20 transition text-white whitespace-nowrap"
-        title="Copy link"
-      >
-        {isCopied ? "✓ Copied" : "Copy Link"}
-      </button>
-      
-      {navigator.share && (
-        <button
-          onClick={handleNativeShare}
-          className="text-[11px] px-3 py-2 rounded bg-white/10 hover:bg-white/20 transition text-white whitespace-nowrap"
-          title="Share"
-        >
-          ↗ Share
-        </button>
-      )}
-    </div>
-  );
-}
 
 export default function ArticlePage() {
   const params = useParams();
@@ -340,6 +291,8 @@ export default function ArticlePage() {
     }
   }, [slug, decodeHtmlEntities, getTimeAgo]);
 
+  
+
   // LOADING UI
   if (loading) {
     return (
@@ -432,8 +385,7 @@ export default function ArticlePage() {
               </p>
             </div>
 
-            {/* Share Button */}
-            <ShareButton article={article} />
+         
           </div>
         </div>
 
@@ -459,6 +411,8 @@ export default function ArticlePage() {
               __html: processImagesInContent(article.content),
             }}
           />
+          <ShareBar article={article} />
+
         </div>
 
         {/* RELATED CONTENT */}
