@@ -116,7 +116,7 @@ export default function Header() {
 
   return (
     <>
-      <nav className="sticky top-12 z-40 w-full bg-black/60 backdrop-blur-md border-b border-white/5 pr-4 md:px-16 py-2">
+      <nav className="sticky top-16 md:top-12 z-40 w-full bg-black/60 backdrop-blur-md border-b border-white/5 pr-4 md:px-16 py-2">
         <div className="flex items-center gap-3">
           
           {/* FIXED SEARCH BUTTON */}
