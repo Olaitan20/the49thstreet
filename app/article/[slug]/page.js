@@ -6,8 +6,6 @@ import Footer from "@/components/layout/Footer";
 import Headline from "@/components/layout/Headline";
 import ShareBar from "@/components/ui/ShareBar";
 
-
-
 export default function ArticlePage() {
   const params = useParams();
   const slug = params.slug;
@@ -69,7 +67,7 @@ export default function ArticlePage() {
     );
   }, [extractSlugFromUrl]);
 
-  // Process images in content - add custom classes and handle errors
+  // Process images in content - add custom classes, center them, and reduce size
   const processImagesInContent = useCallback((html) => {
     if (!html) return "";
     
@@ -93,6 +91,22 @@ export default function ArticlePage() {
           // Add new class attribute
           return `<img${attributes} class="article-content-image" loading="lazy" onerror="this.src='/images/placeholder.jpg'; this.onerror=null;" />`;
         }
+      }
+    );
+    
+    // Wrap images in centering divs if they're not already in figures
+    processedHtml = processedHtml.replace(
+      /<img([^>]*?)class="article-content-image"([^>]*?)>/g,
+      (match, attrs1, attrs2) => {
+        // Check if image is already wrapped in a figure or div
+        const prevChar = match.charAt(-1);
+        const nextChar = match.charAt(1);
+        
+        // Only wrap if not already in a figure
+        if (!match.includes('<figure') && !match.includes('</figure>')) {
+          return `<div class="image-wrapper"><img${attrs1}class="article-content-image"${attrs2}></div>`;
+        }
+        return match;
       }
     );
     
@@ -291,8 +305,6 @@ export default function ArticlePage() {
     }
   }, [slug, decodeHtmlEntities, getTimeAgo]);
 
-  
-
   // LOADING UI
   if (loading) {
     return (
@@ -361,7 +373,7 @@ export default function ArticlePage() {
           <img
             src={article.image}
             alt={stripHtml(article.title)}
-            className="w-full h-full object-contain md:object-cover"
+            className="w-full h-full object-cover"
             onError={handleImageError}
             loading="lazy"
             decoding="async"
@@ -384,8 +396,6 @@ export default function ArticlePage() {
                 {article.author?.toUpperCase()} • {article.date} • {article.time}
               </p>
             </div>
-
-         
           </div>
         </div>
 
@@ -400,11 +410,8 @@ export default function ArticlePage() {
             prose-blockquote:text-gray-400 prose-blockquote:border-l-gray-600 prose-blockquote:pl-4 prose-blockquote:my-6
             prose-strong:text-white prose-em:text-gray-300
             prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg
-            [&_.article-content-image]:w-full [&_.article-content-image]:h-auto 
-            [&_.article-content-image]:my-6 [&_.article-content-image]:
-            [&_.article-content-image]:max-w-full [&_.article-content-image]:object-contain
-            [&_.article-content-image]:block
-            [&_figure]:my-8 [&_figure]:mx-auto [&_figure]:max-w-full
+            [&_.article-content-image]:my-6 [&_.article-content-image]:rounded
+            [&_figure]:my-8 [&_figure]:text-center [&_figure]:max-w-full
             [&_figcaption]:text-center [&_figcaption]:text-gray-400 
             [&_figcaption]:text-sm [&_figcaption]:mt-2"
             dangerouslySetInnerHTML={{
@@ -412,7 +419,6 @@ export default function ArticlePage() {
             }}
           />
           <ShareBar article={article} />
-
         </div>
 
         {/* RELATED CONTENT */}
@@ -430,8 +436,8 @@ export default function ArticlePage() {
           padding-bottom: 1rem;
         }
         #article h3 {
-        
-          font-size: 25 px;}
+          font-size: 25px;
+        }
 
         #article a {
           text-decoration: underline;
@@ -460,80 +466,105 @@ export default function ArticlePage() {
           transform: translateX(2px);
         }
         
-        /* Additional styling for article content images */
-        .article-content-image {
-          transition: transform 0.3s ease, opacity 0.3s ease;
-          max-width: 100%;
-          height: auto;
+        /* Center images and reduce their size */
+        .image-wrapper {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          margin: 1.5rem 0;
+          width: 10%;
         }
         
+        .article-content-image {
+          max-width: 10%;
+          height: auto;
+          border-radius: 4px;
+          transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        
+        /* Default mobile size - images take most of the width */
+        .article-content-image {
+          width: 100%;
+          max-width: 100%;
+        }
+        
+        /* Tablet - slightly reduced */
+        @media (min-width: 640px) {
+          .article-content-image {
+            width: 20%;
+            max-width: 20%;
+          }
+        }
+        
+        /* Small desktop - further reduced */
+        @media (min-width: 768px) {
+          .article-content-image {
+            width: 25%;
+            max-width: 25%;
+          }
+        }
+        
+        /* Desktop - centered with good size */
+        @media (min-width: 1024px) {
+          .article-content-image {
+            width: 25%;
+            max-width: 25%;
+          }
+        }
+        
+        /* Large desktop - optimal reading size */
+        @media (min-width: 1280px) {
+          .article-content-image {
+            width: 25%;
+            max-width: 25%;
+          }
+        }
+        
+        /* Extra large screens - max reduction */
+        @media (min-width: 1536px) {
+          .article-content-image {
+            width: 60%;
+            max-width: 60%;
+          }
+        }
+        
+        /* Keep figure images centered */
+        #article figure {
+          text-align: center;
+          margin: 1.5rem 0;
+        }
+        
+        #article figure img {
+          margin: 0 auto;
+        }
+        
+        /* Image hover effect */
         .article-content-image:hover {
           transform: scale(1.01);
           opacity: 0.95;
         }
 
-        /* Side by side images on desktop */
+        /* Caption styling */
+        .image-wrapper + p,
+        .article-content-image + p {
+          text-align: center;
+          font-size: 0.875rem;
+          color: #9CA3AF;
+          margin-top: 0.5rem;
+          margin-bottom: 1.5rem;
+          font-style: italic;
+        }
+        
+        /* Remove side-by-side image logic since we want them centered individually */
         @media (min-width: 768px) {
+          .article-content-image,
           .article-content-image + .article-content-image {
-            display: inline-block;
-            width: calc(50% - 0.75rem);
-            margin-left: 1.5rem;
-            margin-right: 0;
-            vertical-align: top;
-          }
-          
-          .article-content-image {
-            display: inline-block;
-            width: calc(50% - 0.75rem);
-            margin-right: 1.5rem;
-          }
-
-          /* Reset every other pair */
-          .article-content-image:nth-of-type(4n+1) {
-            clear: left;
-            display: block;
-            width: 100%;
-            margin-right: 0;
-            margin-left: 0;
-          }
-
-          .article-content-image:nth-of-type(4n+2) {
-            display: inline-block;
-            width: calc(50% - 0.75rem);
-            margin-right: 1.5rem;
-            margin-left: 0;
-          }
-
-          .article-content-image:nth-of-type(4n+3) {
-            display: inline-block;
-            width: calc(50% - 0.75rem);
-            margin-left: 1.5rem;
-            margin-right: 0;
-          }
-        }
-        
-        /* Responsive image sizing */
-        @media (min-width: 640px) {
-          .article-content-image {
+            display: block !important;
+            width: 75% !important;
             max-width: 75% !important;
-          }
-        }
-        
-        @media (min-width: 768px) {
-          .article-content-image {
-            max-width: 65% !important;
-          }
-        }
-        
-        @media (min-width: 1024px) {
-          .article-content-image {
-            max-width: 55% !important;
-          }
-        }
-        
-        @media (min-width: 1280px) {
-          .article-content-image {
-            max-width: 45% !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            margin-bottom: 1.5rem !important;
           }
         }
       `}</style>
