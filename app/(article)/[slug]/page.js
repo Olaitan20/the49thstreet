@@ -477,14 +477,14 @@ export default function ArticlePage() {
         
         .article-content-image {
           max-width: 10%;
-          height: auto;
-          border-radius: 4px;
+          height: 500px;
+          border-radius: 0px;
           transition: transform 0.3s ease, opacity 0.3s ease;
         }
         
         /* Default mobile size - images take most of the width */
         .article-content-image {
-          width: 100%;
+          width: 500px;
           max-width: 100%;
         }
         
@@ -506,11 +506,17 @@ export default function ArticlePage() {
         
         /* Desktop - centered with good size */
         @media (min-width: 1024px) {
-          .article-content-image {
-            width: 25%;
-            max-width: 25%;
+          
+           .article-content-image {
+    width: 600px !important;
+    height: 600px !important;
+    max-width: 500px !important;
+    max-height: 500px !important;
+    object-fit: contain !important;
+    // margin: 1.5rem auto !important;
+    display: block !important;
           }
-        }
+        
         
         /* Large desktop - optimal reading size */
         @media (min-width: 1280px) {

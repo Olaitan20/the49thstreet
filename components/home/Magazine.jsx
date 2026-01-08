@@ -204,7 +204,7 @@ export default function Magazine() {
 
   // Handle individual magazine click
   const handleMagazineClick = (slug) => {
-    router.push(`/article/${slug}`);
+    router.push(`/${slug}`);
   };
 
   const staticMagazines = [

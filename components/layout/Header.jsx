@@ -38,7 +38,7 @@ function SearchBar({ onClose }) {
       const res = await fetch(
         `https://staging.the49thstreet.com/wp-json/wp/v2/posts?search=${encodeURIComponent(
           searchTerm
-        )}&_embed&per_page=5`
+        )}&_embed&per_page=10`
       );
 
       if (res.ok) {
@@ -63,7 +63,7 @@ function SearchBar({ onClose }) {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-start justify-center pt-20">
+    <div className="fixed inset-0  z-[60] bg-black/80 backdrop-blur-sm flex items-start justify-center pt-20">
       <div className="w-full max-w-2xl mx-4">
         <div className="relative">
           <input
@@ -82,7 +82,7 @@ function SearchBar({ onClose }) {
         </div>
 
         {(loading || results.length > 0) && (
-          <div className="mt-4 bg-black/90 rounded-lg border border-white/10 overflow-hidden">
+          <div className="mt-4 bg-black/90 rounded-lg border border-white/10 overflow-y-auto max-h-96">
             {loading ? (
               <div className="p-4 text-white/50 text-center">Searching...</div>
             ) : (

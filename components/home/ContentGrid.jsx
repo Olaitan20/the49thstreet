@@ -93,7 +93,7 @@ export default function ContentGrid() {
   if (isLoadingArticles) {
     return (
       <div className="bg-white md:bg-transparent">
-        <section className="px-0 sm:px-6 md:px-8 lg:px-16 pt-[24px] md:pt-0 md:mt-20">
+        <section className="px-0  sm:px-6 md:px-8 lg:px-16 pt-[24px] md:pt-0 md:mt-20">
           <div className="mb-4 md:mb-8 px-4 md:px-0">
             <p className="text-[12px] uppercase mb-1 tracking-widest text-black md:text-white/50">
               /// LATEST
@@ -133,7 +133,7 @@ export default function ContentGrid() {
 
   // MAIN RENDER
   return (
-    <div className="bg-white md:bg-transparent">
+    <div className="bg-white  md:bg-transparent">
       <section className="px-0 sm:px-6 md:px-8 lg:px-16 pt-[24px] md:pt-0 md:mt-20">
         {/* Header */}
         <div className="mb-4 md:mb-8 px-4 md:px-0">
@@ -151,7 +151,7 @@ export default function ContentGrid() {
             <div
               key={article.id}
               className="bg-white hover:shadow-lg transition-all cursor-pointer group"
-              onClick={() => router.push(`/article/${article.slug}`)}
+              onClick={() => router.push(`/${article.slug}`)}
             >
               <div className="w-full aspect-video overflow-hidden">
                 <img
@@ -188,7 +188,7 @@ export default function ContentGrid() {
         </div>
 
         {/* LOAD MORE */}
-        <div className="bg-black py-4 flex justify-center mt-8 md:mb-12">
+        <div className="bg-black py-4 flex justify-center md:mt-8 md:mb-8">
           <button
             onClick={handleLoadMore}
             disabled={loading}

@@ -136,7 +136,7 @@ export default function Hero() {
       sessionStorage.setItem('currentArticle', JSON.stringify(postData));
     }
     // Use proper Next.js navigation
-    router.push(`/article/${encodeURIComponent(slug)}`);
+    router.push(`/${encodeURIComponent(slug)}`);
   };
   // Auto-slide functionality
   const nextSlide = () => {

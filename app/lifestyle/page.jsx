@@ -161,7 +161,7 @@ export default function Page() {
                 viewport={{ once: true, amount: 0.2 }}
                 custom={i * 0.15}
                 className="bg-white hover:shadow-lg transition-shadow cursor-pointer group"
-                onClick={() => router.push(`/article/${article.slug}`)}
+                onClick={() => router.push(`/${article.slug}`)}
               >
                 <div className="w-full h-48 md:h-64 overflow-hidden">
                   <img

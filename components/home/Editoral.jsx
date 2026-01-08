@@ -223,7 +223,7 @@ export default function Editorial() {
             <div
               key={article.id}
               className="transition cursor-pointer group flex items-center hover:opacity-80"
-              onClick={() => router.push(`/article/${article.slug}`)} 
+              onClick={() => router.push(`/${article.slug}`)} 
             >
               <div className="w-24 h-24 flex-shrink-0 overflow-hidden">
                 <img

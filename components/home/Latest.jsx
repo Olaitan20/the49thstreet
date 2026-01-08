@@ -182,7 +182,7 @@ export default function Latest() {
             <div
               key={article.id}
               className="bg-white hover:shadow-lg transition-all cursor-pointer group"
-              onClick={() => router.push(`/article/${article.slug}`)}
+              onClick={() => router.push(`/${article.slug}`)}
             >
               <div className="w-full aspect-video  overflow-hidden">
                 <img
@@ -217,7 +217,7 @@ export default function Latest() {
         </div>
 
         {/* Load More */}
-        <div className="bg-black py-4 flex justify-center mt-8 md:mb-12">
+        <div className="bg-black py-4 flex justify-center md:mt-8 md:mb-8">
           <button
             onClick={handleLoadMore}
             disabled={loading}
