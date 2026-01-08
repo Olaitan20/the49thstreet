@@ -90,7 +90,7 @@ function SearchBar({ onClose }) {
                 <button
                   key={r.id}
                   onClick={() => {
-                    router.push(`/article/${r.slug}`);
+                    router.push(`/${r.slug}`);
                     onClose();
                   }}
                   className="w-full p-4 flex gap-3 hover:bg-white/10 text-left"
