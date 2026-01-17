@@ -9,7 +9,11 @@ export default function Magazine() {
   const [magazines, setMagazines] = useState([]);
   const [isLoadingMagazines, setIsLoadingMagazines] = useState(true);
   const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [uncvrCategoryId, setUncvrCategoryId] = useState(null);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
+  const [desktopBatchIndex, setDesktopBatchIndex] = useState(0);
 
   // Function to calculate time ago
   const getTimeAgo = (dateString) => {
@@ -33,7 +37,6 @@ export default function Magazine() {
   useEffect(() => {
     const fetchUncvrCategory = async () => {
       try {
-        // First, try to find the uncovr category by exact slug
         const uncvrCategoryResponse = await fetch(
           "https://staging.the49thstreet.com/wp-json/wp/v2/categories?slug=uncovr"
         );
@@ -45,7 +48,6 @@ export default function Magazine() {
         const uncvrCategories = await uncvrCategoryResponse.json();
         let category = uncvrCategories.length > 0 ? uncvrCategories[0] : null;
 
-        // If not found by exact slug, try to search in all categories
         if (!category) {
           const allCategoriesResponse = await fetch(
             "https://staging.the49thstreet.com/wp-json/wp/v2/categories"
@@ -76,42 +78,45 @@ export default function Magazine() {
     fetchUncvrCategory();
   }, []);
 
-  // Fetch uncvr posts
-  const fetchUncvrPosts = async (pageNum = 1, append = false) => {
+  // Fetch uncvr posts with proper pagination
+  const fetchUncvrPosts = async (pageNum = 1) => {
     try {
       setIsLoadingMagazines(true);
       let posts = [];
+      let totalPages = 1;
 
-      // If we have the uncvr category ID, fetch its posts
+      // Fetch 8 posts for mobile carousel
+      const perPage = 8;
+
       if (uncvrCategoryId) {
         const postsResponse = await fetch(
-          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&categories=${uncvrCategoryId}&per_page=3&page=${pageNum}&orderby=date&order=desc`
+          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&categories=${uncvrCategoryId}&per_page=${perPage}&page=${pageNum}&orderby=date&order=desc`
         );
 
         if (postsResponse.ok) {
           posts = await postsResponse.json();
-          
-          // Check if there are more posts
-          const totalPages = postsResponse.headers.get('X-WP-TotalPages');
-          if (pageNum >= parseInt(totalPages || '1')) {
-            // Reset to page 1 if we reached the end
-            setPage(1);
-          }
+
+          const totalPagesHeader = postsResponse.headers.get("X-WP-TotalPages");
+          totalPages = totalPagesHeader ? parseInt(totalPagesHeader) : 1;
+          setTotalPages(totalPages);
         }
       }
 
-      // If no posts from uncvr category, get latest posts
       if (posts.length === 0) {
         const latestResponse = await fetch(
-          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&per_page=3&page=${pageNum}&orderby=date&order=desc`
+          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&per_page=${perPage}&page=${pageNum}&orderby=date&order=desc`
         );
 
         if (latestResponse.ok) {
           posts = await latestResponse.json();
+
+          const totalPagesHeader =
+            latestResponse.headers.get("X-WP-TotalPages");
+          totalPages = totalPagesHeader ? parseInt(totalPagesHeader) : 1;
+          setTotalPages(totalPages);
         }
       }
 
-      // Format the magazines
       const formattedMagazines = posts.map((post, index) => {
         const featuredMedia = post._embedded?.["wp:featuredmedia"];
         let featuredImage = "/images/magazine.png";
@@ -127,9 +132,8 @@ export default function Magazine() {
           featuredImage = magazineImages[index % magazineImages.length];
         }
 
-        // Format issue number
-        const issueNumber = String(post.id).padStart(2, '0');
-        
+        const issueNumber = String(post.id).padStart(2, "0");
+
         return {
           id: post.id,
           src: featuredImage,
@@ -140,20 +144,12 @@ export default function Magazine() {
         };
       });
 
-      if (append && pageNum > 1) {
-        // Append new magazines to existing ones
-        setMagazines(prev => [...prev, ...formattedMagazines]);
-        setCurrentIndex(prev => prev + 3);
-      } else {
-        // Replace with new magazines
-        setMagazines(formattedMagazines);
-        setCurrentIndex(0);
-      }
+      setMagazines(formattedMagazines);
+      setPage(pageNum);
+      setCurrentIndex(0); // Reset to first item when fetching new page
     } catch (error) {
       console.error("Error fetching uncvr posts:", error);
-      if (!append) {
-        setMagazines(staticMagazines);
-      }
+      setMagazines(staticMagazines);
     } finally {
       setIsLoadingMagazines(false);
     }
@@ -162,7 +158,7 @@ export default function Magazine() {
   // Initial fetch
   useEffect(() => {
     if (uncvrCategoryId !== null) {
-      fetchUncvrPosts(1, false);
+      fetchUncvrPosts(1);
     }
   }, [uncvrCategoryId]);
 
@@ -173,38 +169,60 @@ export default function Magazine() {
     }, 1500);
   };
 
-  // Handle next/previous for mobile - cycle through current magazines
+  // Handle next/previous for mobile carousel
   const handleNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % magazines.length);
-  };
-  
-  const handlePrev = () => {
     setCurrentIndex((prev) =>
-      prev === 0 ? magazines.length - 1 : prev - 1
+      prev === displayMagazines.slice(0, 8).length - 1 ? 0 : prev + 1
     );
   };
 
-  // Handle desktop arrows - fetch NEW magazines
-  const handleDesktopNext = () => {
-    const nextPage = page + 1;
-    setPage(nextPage);
-    fetchUncvrPosts(nextPage, true);
+  const handlePrev = () => {
+    setCurrentIndex((prev) =>
+      prev === 0 ? displayMagazines.slice(0, 8).length - 1 : prev - 1
+    );
   };
 
+  // Handle desktop arrows - cycle through batches
+  const handleDesktopNext = () => {
+    setDesktopBatchIndex((prev) => (prev + 1) % 3);
+  };
+
+  // Handle desktop arrows - cycle through batches
   const handleDesktopPrev = () => {
-    if (page > 1) {
-      const prevPage = page - 1;
-      setPage(prevPage);
-      fetchUncvrPosts(prevPage, false);
-    } else {
-      // If on page 1, go to last page (circular navigation)
-      fetchUncvrPosts(1, false);
-    }
+    setDesktopBatchIndex((prev) => (prev - 1 + 3) % 3);
   };
 
   // Handle individual magazine click
   const handleMagazineClick = (slug) => {
     router.push(`/${slug}`);
+  };
+
+  // Touch handlers for swipe
+  const handleTouchStart = (e) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe) {
+      handleNext();
+    }
+
+    if (isRightSwipe) {
+      handlePrev();
+    }
+
+    setTouchStart(0);
+    setTouchEnd(0);
   };
 
   const staticMagazines = [
@@ -229,26 +247,70 @@ export default function Magazine() {
       issue: "#ISSUE 07 1 day ago",
       slug: "ayra-starr-profile",
     },
+    {
+      id: 4,
+      src: "/images/magazine2.png",
+      title: "Burna Boy",
+      issue: "#ISSUE 08 2 days ago",
+      slug: "burna-boy-feature",
+    },
+    {
+      id: 5,
+      src: "/images/magazine.png",
+      title: "Wizkid",
+      issue: "#ISSUE 09 3 days ago",
+      slug: "wizkid-interview",
+    },
+    {
+      id: 6,
+      src: "/images/magazine2.png",
+      title: "Davido",
+      issue: "#ISSUE 10 4 days ago",
+      slug: "davido-profile",
+    },
+    {
+      id: 7,
+      src: "/images/magazine.png",
+      title: "Asake",
+      issue: "#ISSUE 11 5 days ago",
+      slug: "asake-feature",
+    },
+    {
+      id: 8,
+      src: "/images/magazine2.png",
+      title: "Rema",
+      issue: "#ISSUE 12 6 days ago",
+      slug: "rema-interview",
+    },
   ];
 
   const displayMagazines = magazines.length > 0 ? magazines : staticMagazines;
+  const mobileMagazines = displayMagazines.slice(0, 8);
+
+  // Get desktop batch articles (3+3+2 pattern)
+  const getDesktopBatchArticles = () => {
+    const batches = [
+      displayMagazines.slice(0, 3), // First 3 articles
+      displayMagazines.slice(3, 6), // Next 3 articles
+      displayMagazines.slice(6, 8), // Last 2 articles
+    ];
+    return batches[desktopBatchIndex] || [];
+  };
 
   if (isLoadingMagazines && magazines.length === 0) {
     return (
       <section className="mb-6 sm:mx-6 md:mx-8 lg:mx-16">
-        {/* Header */}
         <div className="flex items-center justify-between py-6 px-4 md:px-0">
           <div>
             <p className="text-[12px] uppercase mb-2 tracking-widest text-white/50">
               /// UNCOVR
             </p>
             <p className="text-[16px] uppercase font-extrabold text-white">
-              Read UNCOVR 
+              Read UNCOVR
             </p>
           </div>
         </div>
 
-        {/* Loading Skeleton */}
         <div className="hidden md:grid grid-cols-3 gap-0 mb-6">
           {[1, 2, 3].map((item) => (
             <div key={item} className="bg-gray-700 animate-pulse">
@@ -261,11 +323,11 @@ export default function Magazine() {
             </div>
           ))}
         </div>
-        
+
         {/* Mobile Loading Skeleton */}
         <div className="md:hidden">
-          <div className="bg-gray-700 animate-pulse">
-            <div className="w-full h-[420px] bg-gray-600"></div>
+          <div className="relative w-full h-[300px] overflow-hidden">
+            <div className="w-full h-full bg-gray-700 animate-pulse"></div>
             <div className="bg-black py-3 px-4">
               <div className="h-3 w-16 bg-gray-600 mb-2"></div>
               <div className="h-4 w-3/4 bg-gray-600 mb-2"></div>
@@ -290,16 +352,17 @@ export default function Magazine() {
             /// UNCOVR
           </p>
           <p className="text-[16px] uppercase font-extrabold text-white">
-            Read UNCOVR
+            Read UNCOVR 
           </p>
         </div>
 
-        {/* Desktop Arrows - NO LOADER */}
-        {displayMagazines.length > 1 && (
+        {/* Desktop Arrows */}
+        {displayMagazines.length > 0 && (
           <div className="hidden sm:flex items-center gap-3">
             <button
               onClick={handleDesktopPrev}
-              className="p-2 rounded-full border border-white/20 hover:bg-white/10 transition"
+              className="p-2 rounded-full border border-white/20 hover:bg-white/10 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoadingMagazines}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -309,12 +372,17 @@ export default function Magazine() {
                 stroke="white"
                 className="w-5 h-5"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 19l-7-7 7-7"
+                />
               </svg>
             </button>
             <button
               onClick={handleDesktopNext}
-              className="p-2 rounded-full border border-white/20 hover:bg-white/10 transition"
+              className="p-2 rounded-full border border-white/20 hover:bg-white/10 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoadingMagazines}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -324,102 +392,139 @@ export default function Magazine() {
                 stroke="white"
                 className="w-5 h-5"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </button>
           </div>
         )}
       </div>
 
-      {/* ===== MOBILE VIEW (One image at a time) ===== */}
+      {/* ===== MOBILE VIEW (Horizontal Carousel) ===== */}
       <div className="md:hidden">
-        {displayMagazines.length > 0 && (
+        <div className="relative overflow-hidden">
+          {/* Carousel Container */}
           <div
-            onClick={() => handleMagazineClick(displayMagazines[currentIndex].slug)}
-            className="cursor-pointer group"
+            className="flex transition-transform duration-500 ease-out"
+            style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
           >
-            <div className="relative w-full h-64 md:h-80 lg:h-96 overflow-hidden">
-  <img
-    src={displayMagazines[currentIndex].src}
-    alt={displayMagazines[currentIndex].title}
-    className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105"
-    onError={(e) => {
-      const localImages = [
-        "/images/magazine.png",
-        "/images/magazine2.png",
-        "/images/magazine.png",
-      ];
-      const randomLocal = localImages[currentIndex % localImages.length];
-      e.target.src = randomLocal;
-      e.target.onerror = null;
-    }}
-  />
-</div>
+            {mobileMagazines.map((mag, index) => (
+              <div key={`${mag.id}-${index}`} className="w-full flex-shrink-0">
+                <div
+                  onClick={() => handleMagazineClick(mag.slug)}
+                  className="cursor-pointer group mx-1"
+                >
+                  <div className="relative w-full h-64 overflow-hidden">
+                    <img
+                      src={mag.src}
+                      alt={mag.title}
+                      className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105"
+                      onError={(e) => {
+                        const localImages = [
+                          "/images/magazine.png",
+                          "/images/magazine2.png",
+                          "/images/magazine.png",
+                        ];
+                        const randomLocal =
+                          localImages[index % localImages.length];
+                        e.target.src = randomLocal;
+                        e.target.onerror = null;
+                      }}
+                    />
+                  </div>
 
-            {/* Caption + mobile arrows */}
-            <div className="bg-black py-3 px-4 flex justify-between items-center">
-              <div>
-                <p className="text-[12px] uppercase tracking-widest text-white/50">
-                  // uncvr
-                </p>
-                <p className="text-[14px] font-bold  text-white mt-2">
-                  {displayMagazines[currentIndex].title}
-                </p>
-                <p className="text-[12px] uppercase  text-white/60 mt-2 tracking-widest">
-                  {displayMagazines[currentIndex].issue}
-                </p>
-                
-              </div>
-
-              {/* Mobile navigation buttons */}
-              {displayMagazines.length > 1 && (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handlePrev();
-                    }}
-                    className="p-2 rounded-full border border-white/20 hover:bg-white/10 transition"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth="1.8"
-                      stroke="white"
-                      className="w-4 h-4"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleNext();
-                    }}
-                    className="p-2 rounded-full border border-white/20 hover:bg-white/10 transition"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth="1.8"
-                      stroke="white"
-                      className="w-4 h-4"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
+                  {/* Caption */}
+                  <div className="bg-black py-3 px-4">
+                    <div>
+                      <p className="text-[12px] uppercase tracking-widest text-white/50">
+                        // uncvr
+                      </p>
+                      <p className="text-[14px] font-bold text-white mt-2">
+                        {mag.title}
+                      </p>
+                      {/* Uncomment if you want issue text */}
+                      {/* <p className="text-[12px] uppercase text-white/60 mt-2 tracking-widest">
+                        {mag.issue}
+                      </p> */}
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
+              </div>
+            ))}
           </div>
-        )}
+
+          {/* Navigation Buttons */}
+          {mobileMagazines.length > 1 && (
+            <>
+              <button
+                onClick={handlePrev}
+                className="absolute left-2 top-1/2 transform -translate-y-1/2 p-2 rounded-full border border-white/20 bg-black/50 hover:bg-black/70 transition z-10"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="1.8"
+                  stroke="white"
+                  className="w-5 h-5"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </button>
+
+              <button
+                onClick={handleNext}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-full border border-white/20 bg-black/50 hover:bg-black/70 transition z-10"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="1.8"
+                  stroke="white"
+                  className="w-5 h-5"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </button>
+            </>
+          )}
+
+          {/* Dots Indicator */}
+          {mobileMagazines.length > 1 && (
+            <div className="flex justify-center mt-4 space-x-2">
+              {mobileMagazines.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentIndex(index)}
+                  className={`w-2 h-2 rounded-full transition ${
+                    index === currentIndex ? "bg-white" : "bg-white/40"
+                  }`}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* ===== DESKTOP VIEW (All images side by side) ===== */}
+      {/* ===== DESKTOP VIEW (Grid of 3 magazines) ===== */}
       <div className="hidden md:grid grid-cols-3 gap-0 mb-6">
-        {displayMagazines.slice(0, 3).map((mag, index) => (
+        {getDesktopBatchArticles().map((mag, index) => (
           <div
             key={`${mag.id}-${index}`}
             onClick={() => handleMagazineClick(mag.slug)}
@@ -434,7 +539,6 @@ export default function Magazine() {
                   const localImages = [
                     "/images/magazine.png",
                     "/images/magazine2.png",
-                    "/images/magazine.png",
                   ];
                   const randomLocal = localImages[index % localImages.length];
                   e.target.src = randomLocal;
@@ -452,10 +556,6 @@ export default function Magazine() {
               <p className="text-[12px] uppercase text-white/60 mt-1 tracking-widest">
                 {mag.issue}
               </p>
-              {/* Article Slug */}
-              {/* <p className="text-[10px] text-white/40 mt-1">
-                Slug: {mag.slug}
-              </p> */}
             </div>
           </div>
         ))}

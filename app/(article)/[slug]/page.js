@@ -26,11 +26,11 @@ export default function ArticlePage() {
   // Extract slug from WordPress URL
   const extractSlugFromUrl = useCallback((url) => {
     if (!url || typeof url !== "string") return null;
-    
+
     try {
       const urlObj = new URL(url);
       const pathname = urlObj.pathname;
-      
+
       // Remove trailing slash and get the last part
       const pathParts = pathname.replace(/\/$/, "").split("/");
       return pathParts[pathParts.length - 1];
@@ -42,76 +42,83 @@ export default function ArticlePage() {
   }, []);
 
   // Transform WordPress URLs to your new URL format
-  const transformWordPressUrls = useCallback((html) => {
-    if (!html) return "";
-    
-    // Regex to match WordPress URLs from your staging site
-    const wordPressUrlPattern = /https?:\/\/staging\.the49thstreet\.com\/([^\/\s]+)\/?/g;
-    
-    // Replace WordPress URLs with your new format
-    return html.replace(
-      /<a\s+(?:[^>]*?\s+)?href=["'](https?:\/\/staging\.the49thstreet\.com\/([^"'\s]+))["']([^>]*)>/gi,
-      (match, fullUrl, path, attributes) => {
-        // Extract the slug from the URL
-        const slugFromUrl = extractSlugFromUrl(fullUrl);
-        
-        if (slugFromUrl) {
-          // Transform to your new URL format
-          const newUrl = `/article/${slugFromUrl}`;
-          return `<a href="${newUrl}"${attributes}>`;
+  const transformWordPressUrls = useCallback(
+    (html) => {
+      if (!html) return "";
+
+      // Regex to match WordPress URLs from your staging site
+      const wordPressUrlPattern =
+        /https?:\/\/staging\.the49thstreet\.com\/([^\/\s]+)\/?/g;
+
+      // Replace WordPress URLs with your new format
+      return html.replace(
+        /<a\s+(?:[^>]*?\s+)?href=["'](https?:\/\/staging\.the49thstreet\.com\/([^"'\s]+))["']([^>]*)>/gi,
+        (match, fullUrl, path, attributes) => {
+          // Extract the slug from the URL
+          const slugFromUrl = extractSlugFromUrl(fullUrl);
+
+          if (slugFromUrl) {
+            // Transform to your new URL format
+            const newUrl = `/${slugFromUrl}`;
+            return `<a href="${newUrl}"${attributes}>`;
+          }
+
+          // If we can't extract slug, return original
+          return match;
         }
-        
-        // If we can't extract slug, return original
-        return match;
-      }
-    );
-  }, [extractSlugFromUrl]);
+      );
+    },
+    [extractSlugFromUrl]
+  );
 
   // Process images in content - add custom classes, center them, and reduce size
-  const processImagesInContent = useCallback((html) => {
-    if (!html) return "";
-    
-    // First transform URLs
-    let processedHtml = transformWordPressUrls(html);
-    
-    // Then process images
-    processedHtml = processedHtml.replace(
-      /<img([^>]*?)>/g,
-      (match, attributes) => {
-        // Check if class already exists
-        const hasClass = /class=["'][^"']*["']/.test(attributes);
-        
-        if (hasClass) {
-          // Add to existing class
-          return match.replace(
-            /class=["']([^"']*)["']/,
-            'class="$1 article-content-image"'
-          );
-        } else {
-          // Add new class attribute
-          return `<img${attributes} class="article-content-image" loading="lazy" onerror="this.src='/images/placeholder.jpg'; this.onerror=null;" />`;
+  const processImagesInContent = useCallback(
+    (html) => {
+      if (!html) return "";
+
+      // First transform URLs
+      let processedHtml = transformWordPressUrls(html);
+
+      // Then process images
+      processedHtml = processedHtml.replace(
+        /<img([^>]*?)>/g,
+        (match, attributes) => {
+          // Check if class already exists
+          const hasClass = /class=["'][^"']*["']/.test(attributes);
+
+          if (hasClass) {
+            // Add to existing class
+            return match.replace(
+              /class=["']([^"']*)["']/,
+              'class="$1 article-content-image"'
+            );
+          } else {
+            // Add new class attribute
+            return `<img${attributes} class="article-content-image" loading="lazy" onerror="this.src='/images/placeholder.jpg'; this.onerror=null;" />`;
+          }
         }
-      }
-    );
-    
-    // Wrap images in centering divs if they're not already in figures
-    processedHtml = processedHtml.replace(
-      /<img([^>]*?)class="article-content-image"([^>]*?)>/g,
-      (match, attrs1, attrs2) => {
-        // Check if image is already wrapped in a figure or div
-        const prevChar = match.charAt(-1);
-        const nextChar = match.charAt(1);
-        
-        // Only wrap if not already in a figure
-        if (!match.includes('<figure') && !match.includes('</figure>')) {
-          return `<div class="image-wrapper"><img${attrs1}class="article-content-image"${attrs2}></div>`;
+      );
+
+      // Wrap images in centering divs if they're not already in figures
+      processedHtml = processedHtml.replace(
+        /<img([^>]*?)class="article-content-image"([^>]*?)>/g,
+        (match, attrs1, attrs2) => {
+          // Check if image is already wrapped in a figure or div
+          const prevChar = match.charAt(-1);
+          const nextChar = match.charAt(1);
+
+          // Only wrap if not already in a figure
+          if (!match.includes("<figure") && !match.includes("</figure>")) {
+            return `<div class="image-wrapper"><img${attrs1}class="article-content-image"${attrs2}></div>`;
+          }
+          return match;
         }
-        return match;
-      }
-    );
-    
-    return processedHtml;
-  }, [transformWordPressUrls]);
+      );
+
+      return processedHtml;
+    },
+    [transformWordPressUrls]
+  );
 
   // "Time ago" formatter
   const getTimeAgo = useCallback((dateString) => {
@@ -130,11 +137,14 @@ export default function ArticlePage() {
   }, []);
 
   // Strip HTML for alt text
-  const stripHtml = useCallback((html) => {
-    if (!html) return "";
-    const decoded = decodeHtmlEntities(html);
-    return decoded.replace(/<[^>]*>/g, "").trim();
-  }, [decodeHtmlEntities]);
+  const stripHtml = useCallback(
+    (html) => {
+      if (!html) return "";
+      const decoded = decodeHtmlEntities(html);
+      return decoded.replace(/<[^>]*>/g, "").trim();
+    },
+    [decodeHtmlEntities]
+  );
 
   // Handle image errors for featured image
   const handleImageError = useCallback((e) => {
@@ -153,10 +163,10 @@ export default function ArticlePage() {
 
     const addImageErrorHandlers = () => {
       const images = document.querySelectorAll(".article-content-image");
-      images.forEach(img => {
+      images.forEach((img) => {
         img.onerror = null;
         img.onerror = handleContentImageError;
-        
+
         if (!img.classList.contains("article-content-image")) {
           img.classList.add("article-content-image");
         }
@@ -172,15 +182,15 @@ export default function ArticlePage() {
     if (!article) return;
 
     const handleLinkClick = (e) => {
-      const link = e.target.closest('a');
+      const link = e.target.closest("a");
       if (!link) return;
 
-      const href = link.getAttribute('href');
-      
+      const href = link.getAttribute("href");
+
       // Check if it's an internal transformed link (starts with /article/)
-      if (href && href.startsWith('/article/')) {
+      if (href && href.startsWith("/article/")) {
         e.preventDefault();
-        
+
         // Extract slug from the href
         const slugMatch = href.match(/^\/article\/([^\/]+)/);
         if (slugMatch && slugMatch[1]) {
@@ -190,14 +200,14 @@ export default function ArticlePage() {
       }
     };
 
-    const articleElement = document.getElementById('article');
+    const articleElement = document.getElementById("article");
     if (articleElement) {
-      articleElement.addEventListener('click', handleLinkClick);
+      articleElement.addEventListener("click", handleLinkClick);
     }
 
     return () => {
       if (articleElement) {
-        articleElement.removeEventListener('click', handleLinkClick);
+        articleElement.removeEventListener("click", handleLinkClick);
       }
     };
   }, [article, router]);
@@ -234,23 +244,25 @@ export default function ArticlePage() {
         let response = await fetch(
           `https://staging.the49thstreet.com/wp-json/wp/v2/posts?slug=${slug}&_embed&per_page=1`
         );
-        
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         let posts = await response.json();
 
         // Fallback to search if slug doesn't match
         if (!posts || posts.length === 0) {
           const searchResponse = await fetch(
-            `https://staging.the49thstreet.com/wp-json/wp/v2/posts?search=${encodeURIComponent(slug)}&_embed&per_page=1`
+            `https://staging.the49thstreet.com/wp-json/wp/v2/posts?search=${encodeURIComponent(
+              slug
+            )}&_embed&per_page=1`
           );
-          
+
           if (!searchResponse.ok) {
             throw new Error(`HTTP error! status: ${searchResponse.status}`);
           }
-          
+
           const searchData = await searchResponse.json();
 
           if (searchData.length === 0) {
@@ -261,15 +273,14 @@ export default function ArticlePage() {
         }
 
         const post = posts[0];
-        
+
         if (!post) {
           throw new Error("Article data is invalid");
         }
 
         const categories = post._embedded?.["wp:term"]?.[0] || [];
-        const primaryCategory = categories.length > 0 
-          ? categories[0].name.toUpperCase() 
-          : "NEWS";
+        const primaryCategory =
+          categories.length > 0 ? categories[0].name.toUpperCase() : "NEWS";
 
         // Format article data
         const articleData = {
@@ -278,8 +289,9 @@ export default function ArticlePage() {
           title: decodeHtmlEntities(post.title.rendered),
           content: post.content.rendered,
           excerpt: post.excerpt?.rendered || "",
-          image: post._embedded?.["wp:featuredmedia"]?.[0]?.source_url || 
-                 "/images/placeholder.jpg",
+          image:
+            post._embedded?.["wp:featuredmedia"]?.[0]?.source_url ||
+            "/images/placeholder.jpg",
           author: post._embedded?.author?.[0]?.name || "49TH STREET",
           date: new Date(post.date).toLocaleDateString("en-US", {
             year: "numeric",
@@ -313,10 +325,10 @@ export default function ArticlePage() {
           <Headline />
         </div>
 
-        <div className="px-0 sm:px-6 md:px-8 lg:px-16 py-2">
+        <div className="px-0 sm:px-4 md:px-8 lg:px-12 xl:px-16 py-2">
           <div className="w-full h-[70vh] bg-gray-700 animate-pulse mb-6"></div>
 
-          <div className="mx-4 md:mx-0">
+          <div className="mx-2 md:mx-0 max-w-4xl mx-auto">
             <div className="h-4 bg-gray-700 w-1/4 mb-4"></div>
             <div className="h-8 bg-gray-600 w-3/4 mb-4"></div>
             <div className="h-4 bg-gray-600 w-1/2 mb-4"></div>
@@ -330,11 +342,11 @@ export default function ArticlePage() {
   if (error || !article) {
     return (
       <div className="min-h-screen bg-black text-white overflow-x-hidden">
-        <div className="px-0 sm:px-6 md:px-8 lg:px-16">
+        <div className="px-0 sm:px-4 md:px-8 lg:px-12 xl:px-16">
           <Headline />
         </div>
 
-        <div className="mx-4 md:mx-12 lg:mx-16 py-8 text-center">
+        <div className="mx-2 md:mx-auto max-w-4xl py-8 text-center">
           <h1 className="text-2xl font-bold mb-4">Article Not Found</h1>
           <p className="text-gray-400 mb-6">
             {error || "Sorry, the article could not be found."}
@@ -366,14 +378,14 @@ export default function ArticlePage() {
         <Headline />
       </div>
 
-      {/* MAIN CONTENT */}
-      <div className="px-0 sm:px-6 md:px-8 lg:px-16 py-2">
-        {/* FEATURED IMAGE */}
+      {/* MAIN CONTENT - Reduced width containers */}
+      <div className="px-0 sm:px-4 md:px-8 lg:px-12 xl:px-16 py-2">
+        {/* FEATURED IMAGE - Full width */}
         <div className="w-full h-[40vh] md:h-[85vh] -mt-2 relative mb-6 overflow-hidden">
           <img
             src={article.image}
             alt={stripHtml(article.title)}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover md:object-contain"
             onError={handleImageError}
             loading="lazy"
             decoding="async"
@@ -381,7 +393,7 @@ export default function ArticlePage() {
         </div>
 
         {/* META */}
-        <div className="mx-4 md:mx-0">
+        <div className="mx-2 md:mx-auto max-w-4xl">
           <p className="uppercase text-[12px] md:text-[12px] text-white/50 mb-2">
             {"///"} {article.category}
           </p>
@@ -393,14 +405,15 @@ export default function ArticlePage() {
               </h1>
 
               <p className="text-[12px] uppercase md:text-[12px] text-white/60 mb-6">
-                {article.author?.toUpperCase()} • {article.date} • {article.time}
+                {article.author?.toUpperCase()} • {article.date} •{" "}
+                {article.time}
               </p>
             </div>
           </div>
         </div>
 
         {/* CONTENT WITH STYLED IMAGES AND TRANSFORMED LINKS */}
-        <div className="mx-4 md:mx-0 mb-8">
+        <div className="mx-2 md:mx-auto max-w-4xl mb-8">
           <div
             id="article"
             className="text-[14px] md:text-[16px] text-justify leading-relaxed font-[200] prose prose-invert max-w-none
@@ -429,151 +442,170 @@ export default function ArticlePage() {
         {/* FOOTER */}
         <Footer />
       </div>
-
       {/* Inline styles for additional image control */}
       <style>{`
-        #article p {
-          padding-bottom: 1rem;
-        }
-        #article h3 {
-          font-size: 25px;
-        }
+  #article p {
+    padding-bottom: 1rem;
+  }
+  #article h3 {
+    font-size: 25px;
+  }
 
-        #article a {
-          text-decoration: underline;
-          color: #F26509;
-          cursor: pointer;
-          transition: color 0.2s ease;
-        }
-        
-        #article a:hover {
-          color: #ff8c42;
-        }
-        
-        /* Style for transformed WordPress links */
-        #article a[href^="/article/"] {
-          position: relative;
-        }
-        
-        #article a[href^="/article/"]:after {
-          content: " →";
-          opacity: 0;
-          transition: opacity 0.2s ease, transform 0.2s ease;
-        }
-        
-        #article a[href^="/article/"]:hover:after {
-          opacity: 1;
-          transform: translateX(2px);
-        }
-        
-        /* Center images and reduce their size */
-        .image-wrapper {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          margin: 1.5rem 0;
-          width: 10%;
-        }
-        
-        .article-content-image {
-          max-width: 10%;
-          height: 500px;
-          border-radius: 0px;
-          transition: transform 0.3s ease, opacity 0.3s ease;
-        }
-        
-        /* Default mobile size - images take most of the width */
-        .article-content-image {
-          width: 500px;
-          max-width: 100%;
-        }
-        
-        /* Tablet - slightly reduced */
-        @media (min-width: 640px) {
-          .article-content-image {
-            width: 20%;
-            max-width: 20%;
-          }
-        }
-        
-        /* Small desktop - further reduced */
-        @media (min-width: 768px) {
-          .article-content-image {
-            width: 25%;
-            max-width: 25%;
-          }
-        }
-        
-        /* Desktop - centered with good size */
-        @media (min-width: 1024px) {
-          
-           .article-content-image {
-    width: 600px !important;
-    height: 600px !important;
-    max-width: 500px !important;
-    max-height: 500px !important;
+  #article a {
+    text-decoration: underline;
+    color: #F26509;
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+  
+  #article a:hover {
+    color: #ff8c42;
+  }
+  
+  /* Style for transformed WordPress links */
+  #article a[href^="/article/"] {
+    position: relative;
+  }
+  
+  #article a[href^="/article/"]:after {
+    content: " →";
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  
+  #article a[href^="/article/"]:hover:after {
+    opacity: 1;
+    transform: translateX(2px);
+  }
+  
+  /* Center images and make them full width like featured image */
+  .image-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 2rem 0;
+    width: 100%;
+  }
+  
+  /* Content images - use contain to see entire image */
+  .article-content-image {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: 85vh !important;
     object-fit: contain !important;
-    // margin: 1.5rem auto !important;
+    border-radius: 0 !important;
+    margin: 0 auto !important;
     display: block !important;
-          }
-        
-        
-        /* Large desktop - optimal reading size */
-        @media (min-width: 1280px) {
-          .article-content-image {
-            width: 25%;
-            max-width: 25%;
-          }
-        }
-        
-        /* Extra large screens - max reduction */
-        @media (min-width: 1536px) {
-          .article-content-image {
-            width: 60%;
-            max-width: 60%;
-          }
-        }
-        
-        /* Keep figure images centered */
-        #article figure {
-          text-align: center;
-          margin: 1.5rem 0;
-        }
-        
-        #article figure img {
-          margin: 0 auto;
-        }
-        
-        /* Image hover effect */
-        .article-content-image:hover {
-          transform: scale(1.01);
-          opacity: 0.95;
-        }
+  }
+  
+  /* Featured image styling */
+  .featured-image {
+    width: 100%;
+    height: 85vh;
+    object-fit: cover;
+  }
+  
+  /* Default mobile - full width images */
+  .article-content-image {
+    width: 100% !important;
+    height: auto;
+    max-height: 85vh;
+    object-fit: contain !important;
+  }
+  
+  /* Tablet and up - maintain full width */
+  @media (min-width: 640px) {
+    .article-content-image {
+      width: 100% !important;
+      max-width: 100% !important;
+      height: auto;
+      max-height: 85vh;
+      object-fit: contain !important;
+    }
+  }
+  
+  /* Desktop - full width images */
+  @media (min-width: 768px) {
+    .article-content-image {
+      width: 100% !important;
+      max-width: 100% !important;
+      height: auto;
+      max-height: 85vh;
+      object-fit: contain !important;
+    }
+  }
+  
+  /* Large desktop - maintain full width */
+  @media (min-width: 1024px) {
+    .article-content-image {
+      width: 100% !important;
+      max-width: 100% !important;
+      height: auto !important;
+      max-height: 85vh !important;
+      object-fit: contain !important;
+    }
+  }
+  
+  /* Keep figure images centered and full width */
+  #article figure {
+    text-align: center;
+    margin: 2rem 0;
+    width: 100%;
+  }
+  
+  #article figure img {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto;
+    max-height: 85vh;
+    margin: 0 auto;
+    object-fit: contain !important;
+  }
+  
+  /* Image hover effect - optional, you can remove if not needed */
+  .article-content-image:hover {
+    transform: scale(1.01);
+    opacity: 0.95;
+  }
 
-        /* Caption styling */
-        .image-wrapper + p,
-        .article-content-image + p {
-          text-align: center;
-          font-size: 0.875rem;
-          color: #9CA3AF;
-          margin-top: 0.5rem;
-          margin-bottom: 1.5rem;
-          font-style: italic;
-        }
-        
-        /* Remove side-by-side image logic since we want them centered individually */
-        @media (min-width: 768px) {
-          .article-content-image,
-          .article-content-image + .article-content-image {
-            display: block !important;
-            width: 75% !important;
-            max-width: 75% !important;
-            margin-left: auto !important;
-            margin-right: auto !important;
-            margin-bottom: 1.5rem !important;
-          }
-        }
-      `}</style>
+  /* Caption styling */
+  .image-wrapper + p,
+  .article-content-image + p,
+  #article figure + p,
+  #article figure figcaption {
+    text-align: center;
+    font-size: 0.875rem;
+    color: #9CA3AF;
+    margin-top: 0.5rem;
+    margin-bottom: 1.5rem;
+    font-style: italic;
+    width: 100%;
+  }
+  
+  /* Remove any conflicting margin/padding */
+  #article .article-content-image {
+    margin: 2rem auto !important;
+    padding: 0 !important;
+  }
+  
+  /* Ensure images inside content div are full width */
+  #article > div > img,
+  #article > img,
+  #article .wp-block-image img,
+  #article .wp-image img {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: 85vh !important;
+    object-fit: contain !important;
+  }
+  
+  /* Optional: If you want a background for images with aspect ratio different from container */
+  .article-content-image {
+    background-color: #1a1a1a;
+  }
+`}</style>
     </div>
   );
 }
