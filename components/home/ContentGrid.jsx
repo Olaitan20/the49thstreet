@@ -24,50 +24,86 @@ export default function ContentGrid() {
     const diffInMins = Math.floor(diffInMs / (1000 * 60));
     const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
     const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    const diffInMonths = Math.floor(diffInDays / 30);
+    const diffInYears = Math.floor(diffInDays / 365);
 
     if (diffInMins < 60) return `${diffInMins} MINS AGO`;
     if (diffInHours < 24) return `${diffInHours} HOURS AGO`;
-    return `${diffInDays} DAYS AGO`;
+    if (diffInDays < 30) return `${diffInDays} DAYS AGO`;
+    if (diffInMonths < 12)
+      return `${diffInMonths} MONTH${diffInMonths > 1 ? "S" : ""} AGO`;
+    return `${diffInYears} YEAR${diffInYears > 1 ? "S" : ""} AGO`;
   };
 
-  // Fetch WordPress posts
+  // Fetch WordPress posts with author information
   useEffect(() => {
     const fetchPosts = async () => {
       try {
         setIsLoadingArticles(true);
 
+        // Fetch posts with embedded data
         const response = await fetch(
-          "https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&per_page=3"
+          "https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&per_page=3"
         );
 
         if (!response.ok) throw new Error("Failed to fetch posts");
 
         const posts = await response.json();
 
-        const formattedArticles = posts.map((post) => {
+        // Create an array to store articles with author info
+        const formattedArticles = [];
+
+        // Process each post
+        for (const post of posts) {
+          // Get featured image
           const featuredImage =
             post._embedded?.["wp:featuredmedia"]?.[0]?.source_url ||
             "/images/placeholder.jpg";
 
-          const author =
-            post._embedded?.author?.[0]?.name || "49TH STREET";
-
+          // Get categories
           const categories = post._embedded?.["wp:term"]?.[0] || [];
           const category =
-            categories.length > 0
-              ? categories[0].name.toUpperCase()
-              : "NEWS";
+            categories.length > 0 ? categories[0].name.toUpperCase() : "NEWS";
 
-          return {
+          // Get author name - try different ways to fetch it
+          let authorName = "49TH STREET"; // Default fallback
+          
+          // Method 1: Try from embedded author
+          if (post._embedded?.author?.[0]?.name) {
+            authorName = post._embedded.author[0].name;
+          } 
+          // Method 2: If author ID exists, fetch author separately
+          else if (post.author) {
+            try {
+              const authorResponse = await fetch(
+                `https://staging.the49thstreet.com/wp-json/wp/v2/users/${post.author}`
+              );
+              
+              if (authorResponse.ok) {
+                const authorData = await authorResponse.json();
+                authorName = authorData.name || authorData.slug || "49TH STREET";
+              }
+            } catch (error) {
+              console.warn("Could not fetch author:", error);
+            }
+          }
+          
+          // Method 3: Try from post data directly
+          else if (post.author_data?.name) {
+            authorName = post.author_data.name;
+          }
+
+          formattedArticles.push({
             id: post.id,
             image: featuredImage,
             title: decodeHtmlEntities(post.title.rendered),
-            author,
+            author: authorName,
             category,
             time: getTimeAgo(post.date),
             slug: post.slug,
-          };
-        });
+            authorId: post.author, // Keep author ID for reference
+          });
+        }
 
         setArticles(formattedArticles);
       } catch (error) {
@@ -82,7 +118,7 @@ export default function ContentGrid() {
   }, []);
 
   // Load more button handler
-  const   handleLoadMore = () => {
+  const handleLoadMore = () => {
     setLoading(true);
     setTimeout(() => {
       router.push("/news");
@@ -93,7 +129,7 @@ export default function ContentGrid() {
   if (isLoadingArticles) {
     return (
       <div className="bg-white md:bg-transparent">
-        <section className="px-0  sm:px-6 md:px-8 lg:px-16 pt-[24px] md:pt-0 md:mt-20">
+        <section className="px-0 sm:px-6 md:px-8 lg:px-16 pt-[24px] md:pt-0 md:mt-20">
           <div className="mb-4 md:mb-8 px-4 md:px-0">
             <p className="text-[12px] uppercase mb-1 tracking-widest text-black md:text-white/50">
               /// LATEST
@@ -103,24 +139,24 @@ export default function ContentGrid() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map((item) => (
               <div
                 key={item}
-                className="bg-gray-700/80  shadow-sm animate-pulse"
+                className="bg-gray-700/80 shadow-sm animate-pulse"
               >
-                <div className="w-full h-48 bg-gray-700 "></div>
+                <div className="w-full h-48 bg-gray-700"></div>
 
                 <div className="p-4 md:p-6">
                   <div className="space-y-2 mb-4">
-                    <div className="h-4 bg-gray-600  w-full"></div>
-                    <div className="h-4 bg-gray-600  w-3/4"></div>
+                    <div className="h-4 bg-gray-600 w-full"></div>
+                    <div className="h-4 bg-gray-600 w-3/4"></div>
                   </div>
 
                   <div className="flex items-center space-x-2">
-                    <div className="h-3 bg-gray-600  w-16"></div>
-                    <div className="h-3 bg-gray-600  w-12"></div>
-                    <div className="h-3 bg-gray-600  w-14"></div>
+                    <div className="h-3 bg-gray-600 w-16"></div>
+                    <div className="h-3 bg-gray-600 w-12"></div>
+                    <div className="h-3 bg-gray-600 w-14"></div>
                   </div>
                 </div>
               </div>
@@ -131,9 +167,30 @@ export default function ContentGrid() {
     );
   }
 
+  // If no articles found
+  if (articles.length === 0 && !isLoadingArticles) {
+    return (
+      <div className="bg-white md:bg-transparent">
+        <section className="px-0 sm:px-6 md:px-8 lg:px-16 pt-[24px] md:pt-0 md:mt-20">
+          <div className="mb-4 md:mb-8 px-4 md:px-0">
+            <p className="text-[12px] uppercase mb-1 tracking-widest text-black md:text-white/50">
+              /// LATEST
+            </p>
+            <p className="text-base md:text-[16px] uppercase font-extrabold text-black md:text-white">
+              Fresh off the press
+            </p>
+          </div>
+          <div className="text-center py-10 text-gray-500">
+            No articles found.
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   // MAIN RENDER
   return (
-    <div className="bg-white  md:bg-transparent">
+    <div className="bg-white md:bg-transparent">
       <section className="px-0 sm:px-6 md:px-8 lg:px-16 pt-[24px] md:pt-0 md:mt-20">
         {/* Header */}
         <div className="mb-4 md:mb-8 px-4 md:px-0">
@@ -158,9 +215,7 @@ export default function ContentGrid() {
                   src={article.image}
                   alt={article.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  onError={(e) =>
-                    (e.target.src = "/images/placeholder.jpg")
-                  }
+                  onError={(e) => (e.target.src = "/images/placeholder.jpg")}
                 />
               </div>
 
@@ -169,14 +224,23 @@ export default function ContentGrid() {
                   {article.title}
                 </p>
 
-                <div className="flex flex-row items-center gap-1">
-                  <span className="text-[12px] text-black/50 ">
+                <div className="flex flex-row items-center gap-1 flex-wrap">
+                  {/* Author */}
+                  <span className="text-[12px] text-black/50">
                     {article.author?.toUpperCase()}
                   </span>
-                  <span className="text-xs text-gray-400">•</span>
-                  <span className="text-[12px] text-black/50 ">
-                    {article.category}
-                  </span>
+                  
+                  {/* Separator - only show if category exists */}
+                  {article.category && article.category !== "NEWS" && (
+                    <>
+                      <span className="text-xs text-gray-400">•</span>
+                      <span className="text-[12px] text-black/50">
+                        {article.category}
+                      </span>
+                    </>
+                  )}
+                  
+                  {/* Time */}
                   <span className="text-xs text-gray-400">•</span>
                   <span className="text-[12px] text-black/50">
                     {article.time}
@@ -188,7 +252,7 @@ export default function ContentGrid() {
         </div>
 
         {/* LOAD MORE */}
-        <div className="bg-black py-4 flex justify-center md:mt-8 md:mb-8">
+        <div className="bg-black py-4 flex justify-center md:mt-8">
           <button
             onClick={handleLoadMore}
             disabled={loading}

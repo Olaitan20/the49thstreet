@@ -14,40 +14,40 @@ export default function Headline() {
       try {
         setLoading(true);
         setError(null);
-        
+
         console.log("🔄 Fetching latest news for headline...");
-        
+
         const response = await fetch(
-          'https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&per_page=5&orderby=date&order=desc'
+          "https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&per_page=5&orderby=date&order=desc",
         );
-        
+
         if (!response.ok) {
-          throw new Error('Failed to fetch latest news');
+          throw new Error("Failed to fetch latest news");
         }
-        
+
         const posts = await response.json();
-        console.log('✅ Latest posts found:', posts.length);
+        console.log("✅ Latest posts found:", posts.length);
 
         // Transform posts to headlines
-        const formattedHeadlines = posts.map(post => {
+        const formattedHeadlines = posts.map((post) => {
           // Get the first category
-          const categories = post._embedded?.['wp:term']?.[0] || [];
-          const category = categories.length > 0 ? categories[0].name.toUpperCase() : 'NEWS';
-          
+          const categories = post._embedded?.["wp:term"]?.[0] || [];
+          const category =
+            categories.length > 0 ? categories[0].name.toUpperCase() : "NEWS";
+
           // Decode HTML entities and clean title
           const title = post.title.rendered
-            .replace(/<[^>]*>/g, '') // Remove HTML tags
-            .replace(/&[^;]+;/g, '') // Remove HTML entities
+            .replace(/<[^>]*>/g, "") // Remove HTML tags
+            .replace(/&[^;]+;/g, "") // Remove HTML entities
             .trim();
-          
+
           return `${category}: ${title}`;
         });
 
-        console.log('✅ Formatted headlines:', formattedHeadlines);
+        console.log("✅ Formatted headlines:", formattedHeadlines);
         setHeadlines(formattedHeadlines);
-        
       } catch (error) {
-        console.error('❌ Error fetching headlines:', error);
+        console.error("❌ Error fetching headlines:", error);
         setError(error.message);
         // Fallback to static headlines
         setHeadlines([
@@ -70,15 +70,18 @@ export default function Headline() {
     const container = containerRef.current;
     if (container && headlines.length > 0) {
       // Clear existing content
-      container.innerHTML = '';
-      
+      container.innerHTML = "";
+
       // Create the marquee content
-      const content = headlines.map((headline, i) => (
-        `<span class="flex items-center gap-3">
+      const content = headlines
+        .map(
+          (headline, i) =>
+            `<span class="flex items-center gap-3">
           ${headline}
-          ${i !== headlines.length - 1 ? '<span class="text-black">•</span>' : ''}
-        </span>`
-      )).join('');
+          ${i !== headlines.length - 1 ? '<span class="text-black">•</span>' : ""}
+        </span>`,
+        )
+        .join("");
 
       // Duplicate content for seamless loop
       container.innerHTML = content + content;
@@ -92,7 +95,12 @@ export default function Headline() {
         <div className="flex items-center py-3">
           {/* Label: What's Hot? */}
           <div className="absolute left-0 top-0 h-full flex items-center gap-1 px-3 bg-gray-100 z-10">
-            <Image src="/icons/fire.png" alt="Fire Icon" width={20} height={20} />
+            <Image
+              src="/icons/fire.png"
+              alt="Fire Icon"
+              width={20}
+              height={20}
+            />
             <p className="uppercase text-xs font-bold">What's Hot?</p>
           </div>
 
@@ -129,9 +137,7 @@ export default function Headline() {
 
       {/* Error message (hidden but logged) */}
       {error && (
-        <div style={{ display: 'none' }}>
-          Error loading headlines: {error}
-        </div>
+        <div style={{ display: "none" }}>Error loading headlines: {error}</div>
       )}
     </div>
   );

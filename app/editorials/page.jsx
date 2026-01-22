@@ -48,15 +48,23 @@ export default function Page() {
     const diffInMins = Math.floor(diffInMs / (1000 * 60));
     const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
     const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-    
+    const diffInMonths = Math.floor(diffInDays / 30);
+    const diffInYears = Math.floor(diffInDays / 365);
+
     if (diffInMins < 60) return `${diffInMins} MINS AGO`;
     if (diffInHours < 24) return `${diffInHours} HOURS AGO`;
-    return `${diffInDays} DAYS AGO`;
+    if (diffInDays < 30) return `${diffInDays} DAYS AGO`;
+    if (diffInMonths < 12)
+      return `${diffInMonths} MONTH${diffInMonths > 1 ? "S" : ""} AGO`;
+    return `${diffInYears} YEAR${diffInYears > 1 ? "S" : ""} AGO`;
   };
 
   // Helper to get featured image
   const getFeaturedImage = (post) => {
-    return post._embedded?.["wp:featuredmedia"]?.[0]?.source_url || "/images/placeholder.jpg";
+    return (
+      post._embedded?.["wp:featuredmedia"]?.[0]?.source_url ||
+      "/images/placeholder.jpg"
+    );
   };
 
   // Helper to get author name
@@ -68,13 +76,13 @@ export default function Page() {
   const fetchEditorialCategoryId = async () => {
     try {
       const res = await fetch(
-        `https://staging.the49thstreet.com/wp-json/wp/v2/categories?slug=editorial`
+        `https://staging.the49thstreet.com/wp-json/wp/v2/categories?slug=editorial`,
       );
-      
+
       if (!res.ok) throw new Error(`Failed to fetch category: ${res.status}`);
-      
+
       const categories = await res.json();
-      
+
       if (categories.length > 0) {
         return categories[0].id;
       } else {
@@ -100,7 +108,7 @@ export default function Page() {
       }
 
       const res = await fetch(
-        `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&categories=${categoryId}&per_page=9&page=${pageNum}&orderby=date&order=desc`
+        `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&categories=${categoryId}&per_page=9&page=${pageNum}&orderby=date&order=desc`,
       );
 
       if (!res.ok) throw new Error(`Failed to fetch posts: ${res.status}`);
@@ -112,7 +120,7 @@ export default function Page() {
 
       const formatted = data.map((post, index) => {
         let image = getFeaturedImage(post);
-        
+
         return {
           id: post.id,
           image,
@@ -124,7 +132,9 @@ export default function Page() {
         };
       });
 
-      setArticles((prev) => (pageNum === 1 ? formatted : [...prev, ...formatted]));
+      setArticles((prev) =>
+        pageNum === 1 ? formatted : [...prev, ...formatted],
+      );
       setPage(pageNum);
     } catch (err) {
       console.error("Error fetching articles:", err);
@@ -251,16 +261,18 @@ export default function Page() {
       {/* No More Articles Message */}
       {!hasMore && !apiLoading && (
         <div className="flex justify-center mb-8 items-center">
-            <div className="px-4 py-2  font-normal rounded-full bg-[#F26509]">
-              <p>coming soon</p>
-            </div>
+          <div className="px-4 py-2  font-normal rounded-full bg-[#F26509]">
+            <p>coming soon</p>
           </div>
+        </div>
       )}
 
       {/* Error Message */}
       {error && articles.length > 0 && (
         <div className="bg-black py-2 md:py-6 flex justify-center mt-2">
-          <p className="text-red-400 text-sm">Error loading more articles: {error}</p>
+          <p className="text-red-400 text-sm">
+            Error loading more articles: {error}
+          </p>
         </div>
       )}
 

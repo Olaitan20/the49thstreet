@@ -1,12 +1,12 @@
-'use client'
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+"use client";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Editorial() {
-  const router = useRouter()
-  const [loading, setLoading] = useState(false)
-  const [articles, setArticles] = useState([])
-  const [isLoadingArticles, setIsLoadingArticles] = useState(true)
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [articles, setArticles] = useState([]);
+  const [isLoadingArticles, setIsLoadingArticles] = useState(true);
 
   // Function to calculate time ago
   const getTimeAgo = (dateString) => {
@@ -16,20 +16,26 @@ export default function Editorial() {
     const diffInMins = Math.floor(diffInMs / (1000 * 60));
     const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
     const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    const diffInMonths = Math.floor(diffInDays / 30);
+    const diffInYears = Math.floor(diffInDays / 365);
 
     if (diffInMins < 60) {
       return `${diffInMins} MINS AGO`;
     } else if (diffInHours < 24) {
       return `${diffInHours} HOURS AGO`;
-    } else {
+    } else if (diffInDays < 30) {
       return `${diffInDays} DAYS AGO`;
+    } else if (diffInMonths < 12) {
+      return `${diffInMonths} MONTH${diffInMonths > 1 ? "S" : ""} AGO`;
+    } else {
+      return `${diffInYears} YEAR${diffInYears > 1 ? "S" : ""} AGO`;
     }
   };
 
   // Decode HTML entities
   const decodeHtmlEntities = (text) => {
-    if (typeof text !== 'string') return text;
-    const textArea = document.createElement('textarea');
+    if (typeof text !== "string") return text;
+    const textArea = document.createElement("textarea");
     textArea.innerHTML = text;
     return textArea.value;
   };
@@ -42,7 +48,7 @@ export default function Editorial() {
 
         // Fetch category by slug
         const categoriesResponse = await fetch(
-          'https://staging.the49thstreet.com/wp-json/wp/v2/categories?slug=49th-exclusive'
+          "https://staging.the49thstreet.com/wp-json/wp/v2/categories?slug=49th-exclusive",
         );
         const categories = await categoriesResponse.json();
 
@@ -52,7 +58,7 @@ export default function Editorial() {
           const categoryId = categories[0].id;
 
           const postsResponse = await fetch(
-            `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&categories=${categoryId}&per_page=3&orderby=date&order=desc`
+            `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&per_page=3`,
           );
 
           if (postsResponse.ok) {
@@ -63,20 +69,24 @@ export default function Editorial() {
         // Fallbacks
         if (posts.length === 0) {
           const latestResponse = await fetch(
-            'https://staging.the49thstreet.com/wp/v2/posts?_embed&per_page=3&orderby=date&order=desc'
+            "https://staging.the49thstreet.com/wp/v2/posts?_embed&per_page=3&orderby=date&order=desc",
           );
           posts = await latestResponse.json();
         }
 
         const formatted = posts.map((post, index) => {
           const featuredImage =
-            post._embedded?.['wp:featuredmedia']?.[0]?.source_url ||
-            ['/images/victony.png', '/images/wizkid.png', '/images/minz.png'][index % 3];
+            post._embedded?.["wp:featuredmedia"]?.[0]?.source_url ||
+            ["/images/victony.png", "/images/wizkid.png", "/images/minz.png"][
+              index % 3
+            ];
 
-          const author = post._embedded?.author?.[0]?.name || '49TH STREET';
-          const categories = post._embedded?.['wp:term']?.[0] || [];
+          const author = post._embedded?.author?.[0]?.name || "49TH STREET";
+          const categories = post._embedded?.["wp:term"]?.[0] || [];
           const category =
-            categories.length > 0 ? categories[0].name.toUpperCase() : 'EXCLUSIVE';
+            categories.length > 0
+              ? categories[0].name.toUpperCase()
+              : "EXCLUSIVE";
 
           return {
             id: post.id,
@@ -85,7 +95,7 @@ export default function Editorial() {
             author,
             category,
             time: getTimeAgo(post.date),
-            slug: post.slug
+            slug: post.slug,
           };
         });
 
@@ -104,38 +114,39 @@ export default function Editorial() {
   // See all handler
   const handleSeeAll = () => {
     setLoading(true);
-    setTimeout(() => router.push('/'), 1500);
+    setTimeout(() => router.push("/"), 1500);
   };
 
   // Static fallback*
   const staticArticles = [
     {
       id: 1,
-      image: '/images/victony.png',
-      title: "Victony Scores New Certification With Efforts On Victony's 'Stubborn'",
-      author: 'IAM NOONE',
-      category: '49TH EXCLUSIVE',
-      time: '5 MINS AGO',
-      slug: 'victony-certification'
+      image: "/images/victony.png",
+      title:
+        "Victony Scores New Certification With Efforts On Victony's 'Stubborn'",
+      author: "IAM NOONE",
+      category: "49TH EXCLUSIVE",
+      time: "5 MINS AGO",
+      slug: "victony-certification",
     },
     {
       id: 2,
-      image: '/images/wizkid.png',
-      title: 'Wizkid Makes Surprise Nativeland Appearance',
-      author: '49TH STREET',
-      category: '49TH EXCLUSIVE',
-      time: '20 MINS AGO',
-      slug: 'wizkid-nativeland'
+      image: "/images/wizkid.png",
+      title: "Wizkid Makes Surprise Nativeland Appearance",
+      author: "49TH STREET",
+      category: "49TH EXCLUSIVE",
+      time: "20 MINS AGO",
+      slug: "wizkid-nativeland",
     },
     {
       id: 3,
-      image: '/images/minz.png',
-      title: 'Minz Stuns For Orange',
-      author: 'TEMPLE EGEMESI',
-      category: '49TH EXCLUSIVE',
-      time: '23 MINS AGO',
-      slug: 'minz-orange'
-    }
+      image: "/images/minz.png",
+      title: "Minz Stuns For Orange",
+      author: "TEMPLE EGEMESI",
+      category: "49TH EXCLUSIVE",
+      time: "23 MINS AGO",
+      slug: "minz-orange",
+    },
   ];
 
   const displayArticles = articles.length > 0 ? articles : staticArticles;
@@ -165,7 +176,10 @@ export default function Editorial() {
           {/* Skeleton Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 px-4 md:px-0 lg:grid-cols-3 gap-4 md:gap-6">
             {[1, 2, 3].map((item) => (
-              <div key={item} className="transition cursor-pointer group flex items-center animate-pulse">
+              <div
+                key={item}
+                className="transition cursor-pointer group flex items-center animate-pulse"
+              >
                 <div className="w-24 h-24 bg-gray-700"></div>
                 <div className="ml-4 flex flex-col justify-between flex-1">
                   <div className="space-y-2">
@@ -212,7 +226,7 @@ export default function Editorial() {
                 Loading...
               </>
             ) : (
-              'See All'
+              "See All"
             )}
           </button>
         </div>
@@ -223,7 +237,7 @@ export default function Editorial() {
             <div
               key={article.id}
               className="transition cursor-pointer group flex items-center hover:opacity-80"
-              onClick={() => router.push(`/${article.slug}`)} 
+              onClick={() => router.push(`/${article.slug}`)}
             >
               <div className="w-24 h-24 flex-shrink-0 overflow-hidden">
                 <img

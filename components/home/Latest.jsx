@@ -24,10 +24,15 @@ export default function Latest() {
     const diffInMins = Math.floor(diffInMs / (1000 * 60));
     const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
     const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    const diffInMonths = Math.floor(diffInDays / 30);
+    const diffInYears = Math.floor(diffInDays / 365);
 
     if (diffInMins < 60) return `${diffInMins} MINS AGO`;
     if (diffInHours < 24) return `${diffInHours} HOURS AGO`;
-    return `${diffInDays} DAYS AGO`;
+    if (diffInDays < 30) return `${diffInDays} DAYS AGO`;
+    if (diffInMonths < 12)
+      return `${diffInMonths} MONTH${diffInMonths > 1 ? "S" : ""} AGO`;
+    return `${diffInYears} YEAR${diffInYears > 1 ? "S" : ""} AGO`;
   };
 
   // Fetch music posts
@@ -38,7 +43,7 @@ export default function Latest() {
 
         // Get Music category ID
         const categoriesResponse = await fetch(
-          "https://staging.the49thstreet.com/wp-json/wp/v2/categories?slug=music"
+          "https://staging.the49thstreet.com/wp-json/wp/v2/categories?slug=music",
         );
         const categories = await categoriesResponse.json();
         if (!categories.length) {
@@ -49,7 +54,7 @@ export default function Latest() {
 
         // Fetch posts from Music category
         const postsResponse = await fetch(
-          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&categories=${musicCategoryId}&per_page=3&orderby=date&order=desc`
+          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&categories=${musicCategoryId}&per_page=3&orderby=date&order=desc`,
         );
         const posts = await postsResponse.json();
 
@@ -57,8 +62,7 @@ export default function Latest() {
           const featuredImage =
             post._embedded?.["wp:featuredmedia"]?.[0]?.source_url ||
             "/images/placeholder.jpg";
-          const author =
-            post._embedded?.author?.[0]?.name || "49TH STREET";
+          const author = post._embedded?.author?.[0]?.name || "49TH STREET";
           const categories = post._embedded?.["wp:term"]?.[0] || [];
           const category =
             categories.length > 0 ? categories[0].name.toUpperCase() : "MUSIC";
@@ -96,7 +100,8 @@ export default function Latest() {
     {
       id: 1,
       image: "/images/burna.png",
-      title: "Victony Scores New Certification With Efforts On Victony's 'Stubborn'",
+      title:
+        "Victony Scores New Certification With Efforts On Victony's 'Stubborn'",
       author: "IAM NOONE",
       category: "MUSIC",
       time: "5 MINS AGO",
@@ -165,7 +170,7 @@ export default function Latest() {
 
   return (
     <div className="bg-white pb-0 md:bg-transparent">
-      <section className="px-0 sm:px-6 md:px-8 lg:px-16 pt-[24px] md:pt-0 md:mt-20">
+      <section className="px-0 sm:px-6 md:px-8 lg:px-16 pt-[24px] md:pt-0 md:mt-10">
         {/* Header */}
         <div className="mb-4 md:mb-8 px-4 md:px-0">
           <p className="text-[12px] uppercase mb-1 tracking-widest text-black md:text-white/50">

@@ -16,13 +16,19 @@ export default function Sports() {
     const diffInMins = Math.floor(diffInMs / (1000 * 60));
     const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
     const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    const diffInMonths = Math.floor(diffInDays / 30);
+    const diffInYears = Math.floor(diffInDays / 365);
 
     if (diffInMins < 60) {
       return `${diffInMins} MINS AGO`;
     } else if (diffInHours < 24) {
       return `${diffInHours} HOURS AGO`;
-    } else {
+    } else if (diffInDays < 30) {
       return `${diffInDays} DAYS AGO`;
+    } else if (diffInMonths < 12) {
+      return `${diffInMonths} MONTH${diffInMonths > 1 ? "S" : ""} AGO`;
+    } else {
+      return `${diffInYears} YEAR${diffInYears > 1 ? "S" : ""} AGO`;
     }
   };
 
@@ -33,7 +39,7 @@ export default function Sports() {
         setIsLoadingArticles(true);
 
         const allCategoriesResponse = await fetch(
-          "https://staging.the49thstreet.com/wp-json/wp/v2/categories"
+          "https://staging.the49thstreet.com/wp-json/wp/v2/categories",
         );
 
         if (!allCategoriesResponse.ok) {
@@ -45,14 +51,14 @@ export default function Sports() {
         let sportsCategory = allCategories.find(
           (cat) =>
             cat.slug.toLowerCase().includes("sport") ||
-            cat.name.toLowerCase().includes("sport")
+            cat.name.toLowerCase().includes("sport"),
         );
 
         let posts = [];
 
         if (sportsCategory) {
           const postsResponse = await fetch(
-            `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&categories=${sportsCategory.id}&per_page=3&orderby=date&order=desc`
+            `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&categories=${sportsCategory.id}&per_page=3&orderby=date&order=desc`,
           );
 
           if (postsResponse.ok) {
@@ -62,7 +68,7 @@ export default function Sports() {
 
         if (posts.length === 0) {
           const latestResponse = await fetch(
-            "https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&per_page=3&orderby=date&order=desc"
+            "https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&per_page=3&orderby=date&order=desc",
           );
 
           if (latestResponse.ok) {
@@ -203,7 +209,7 @@ export default function Sports() {
             <div
               key={article.id}
               className="bg-white hover:shadow-lg transition-shadow cursor-pointer group"
-              onClick={() => router.push(`/${article.slug}`)} 
+              onClick={() => router.push(`/${article.slug}`)}
             >
               <div className="w-full aspect-video overflow-hidden">
                 <img
@@ -217,7 +223,9 @@ export default function Sports() {
                       "/images/minz.png",
                     ];
                     const randomLocal =
-                      localImages[Math.floor(Math.random() * localImages.length)];
+                      localImages[
+                        Math.floor(Math.random() * localImages.length)
+                      ];
                     e.target.src = randomLocal;
                     e.target.onerror = null;
                   }}

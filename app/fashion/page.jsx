@@ -16,9 +16,9 @@ export default function Page() {
 
   // Function to decode HTML entities
   const decodeHtmlEntities = (text) => {
-    if (typeof text !== 'string') return text;
-    
-    const textarea = document.createElement('textarea');
+    if (typeof text !== "string") return text;
+
+    const textarea = document.createElement("textarea");
     textarea.innerHTML = text;
     return textarea.value;
   };
@@ -31,13 +31,19 @@ export default function Page() {
     const diffInMins = Math.floor(diffInMs / (1000 * 60));
     const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
     const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    const diffInMonths = Math.floor(diffInDays / 30);
+    const diffInYears = Math.floor(diffInDays / 365);
 
     if (diffInMins < 60) {
       return `${diffInMins} MINS AGO`;
     } else if (diffInHours < 24) {
       return `${diffInHours} HOURS AGO`;
-    } else {
+    } else if (diffInDays < 30) {
       return `${diffInDays} DAYS AGO`;
+    } else if (diffInMonths < 12) {
+      return `${diffInMonths} MONTH${diffInMonths > 1 ? "S" : ""} AGO`;
+    } else {
+      return `${diffInYears} YEAR${diffInYears > 1 ? "S" : ""} AGO`;
     }
   };
 
@@ -46,22 +52,22 @@ export default function Page() {
     const getFashionCategory = async () => {
       try {
         const categoriesResponse = await fetch(
-          'https://staging.the49thstreet.com/wp-json/wp/v2/categories?slug=fashion'
+          "https://staging.the49thstreet.com/wp-json/wp/v2/categories?slug=fashion",
         );
-        
+
         if (!categoriesResponse.ok) {
-          throw new Error('Failed to fetch categories');
+          throw new Error("Failed to fetch categories");
         }
-        
+
         const categories = await categoriesResponse.json();
         console.log("👗 Fashion categories found:", categories);
-        
+
         if (categories.length > 0) {
           setFashionCategoryId(categories[0].id);
-          console.log('Fashion category ID:', categories[0].id);
+          console.log("Fashion category ID:", categories[0].id);
         }
       } catch (error) {
-        console.error('Error fetching fashion category:', error);
+        console.error("Error fetching fashion category:", error);
       }
     };
 
@@ -72,27 +78,33 @@ export default function Page() {
   const fetchArticles = async (pageNum = 1) => {
     try {
       setLoading(true);
-      
+
       console.log(`Fetching fashion posts page ${pageNum}...`);
-      
+
       let posts = [];
 
       // Try fashion category if we have the ID
       if (fashionCategoryId) {
         const postsResponse = await fetch(
-          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&categories=${fashionCategoryId}&per_page=9&page=${pageNum}&orderby=date&order=desc`
+          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&categories=${fashionCategoryId}&per_page=9&page=${pageNum}&orderby=date&order=desc`,
         );
-        
+
         if (postsResponse.ok) {
           posts = await postsResponse.json();
-          
+
           // Get pagination info from headers
-          const totalPages = parseInt(postsResponse.headers.get('X-WP-TotalPages') || '1');
-          const totalItems = parseInt(postsResponse.headers.get('X-WP-Total') || '0');
-          console.log(`📊 Page ${pageNum} of ${totalPages}, Total items: ${totalItems}`);
+          const totalPages = parseInt(
+            postsResponse.headers.get("X-WP-TotalPages") || "1",
+          );
+          const totalItems = parseInt(
+            postsResponse.headers.get("X-WP-Total") || "0",
+          );
+          console.log(
+            `📊 Page ${pageNum} of ${totalPages}, Total items: ${totalItems}`,
+          );
           setHasMore(pageNum < totalPages);
-          
-          console.log('Fashion posts found:', posts.length);
+
+          console.log("Fashion posts found:", posts.length);
         }
       }
 
@@ -100,43 +112,56 @@ export default function Page() {
       if (posts.length === 0) {
         console.log("🔄 No fashion posts, fetching latest posts...");
         const latestResponse = await fetch(
-          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&per_page=9&page=${pageNum}&orderby=date&order=desc`
+          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&per_page=9&page=${pageNum}&orderby=date&order=desc`,
         );
-        
+
         if (latestResponse.ok) {
           posts = await latestResponse.json();
-          
+
           // Get pagination info from headers
-          const totalPages = parseInt(latestResponse.headers.get('X-WP-TotalPages') || '1');
-          const totalItems = parseInt(latestResponse.headers.get('X-WP-Total') || '0');
-          console.log(`📊 Page ${pageNum} of ${totalPages}, Total items: ${totalItems}`);
+          const totalPages = parseInt(
+            latestResponse.headers.get("X-WP-TotalPages") || "1",
+          );
+          const totalItems = parseInt(
+            latestResponse.headers.get("X-WP-Total") || "0",
+          );
+          console.log(
+            `📊 Page ${pageNum} of ${totalPages}, Total items: ${totalItems}`,
+          );
           setHasMore(pageNum < totalPages);
-          
-          console.log('📝 Latest posts found:', posts.length);
+
+          console.log("📝 Latest posts found:", posts.length);
         }
       }
 
       // Transform WordPress data
       const formattedArticles = posts.map((post, index) => {
         // Get featured image or use fallback
-        let featuredImage = '/images/placeholder.jpg';
-        const featuredMedia = post._embedded?.['wp:featuredmedia'];
-        
+        let featuredImage = "/images/placeholder.jpg";
+        const featuredMedia = post._embedded?.["wp:featuredmedia"];
+
         if (featuredMedia && featuredMedia[0] && featuredMedia[0].source_url) {
           featuredImage = featuredMedia[0].source_url;
         } else {
           // Use fashion-themed fallback images
-          const fashionImages = ['/images/minz.png', '/images/victony.png', '/images/wizkid.png'];
+          const fashionImages = [
+            "/images/minz.png",
+            "/images/victony.png",
+            "/images/wizkid.png",
+          ];
           featuredImage = fashionImages[index % fashionImages.length];
         }
-        
-        const author = post._embedded?.author?.[0]?.name || 'FASHION DESK';
-        const postCategories = post._embedded?.['wp:term']?.[0] || [];
-        const category = postCategories.length > 0 ? postCategories[0].name.toUpperCase() : 'FASHION';
-        
+
+        const author = post._embedded?.author?.[0]?.name || "FASHION DESK";
+        const postCategories = post._embedded?.["wp:term"]?.[0] || [];
+        const category =
+          postCategories.length > 0
+            ? postCategories[0].name.toUpperCase()
+            : "FASHION";
+
         // Decode HTML entities in title
         const cleanTitle = decodeHtmlEntities(post.title.rendered);
-        
+
         return {
           id: post.id,
           image: featuredImage,
@@ -144,24 +169,23 @@ export default function Page() {
           author: author,
           category: category,
           time: getTimeAgo(post.date),
-          slug: post.slug
+          slug: post.slug,
         };
       });
-      
+
       // Add new articles to existing list or set initial articles
       if (pageNum === 1) {
         setArticles(formattedArticles);
       } else {
-        setArticles(prev => [...prev, ...formattedArticles]);
+        setArticles((prev) => [...prev, ...formattedArticles]);
       }
-      
+
       setPage(pageNum);
-      
     } catch (error) {
-      console.error('Error fetching fashion posts:', error);
+      console.error("Error fetching fashion posts:", error);
       // Use static data as fallback only on initial load
       if (pageNum === 1) {
-        console.log('🔄 Using static fashion data');
+        console.log("🔄 Using static fashion data");
         setArticles(staticArticles);
         setHasMore(false); // No more pages for static data
       }
@@ -179,7 +203,7 @@ export default function Page() {
     const timer = setTimeout(() => {
       fetchArticles(1);
     }, 500);
-    
+
     return () => clearTimeout(timer);
   }, [fashionCategoryId]);
 
@@ -199,7 +223,7 @@ export default function Page() {
       author: "FASHION EDITOR",
       category: "FASHION",
       time: "5 MINS AGO",
-      slug: "minz-orange-campaign"
+      slug: "minz-orange-campaign",
     },
     {
       id: 2,
@@ -208,7 +232,7 @@ export default function Page() {
       author: "FASHION DESK",
       category: "FASHION",
       time: "20 MINS AGO",
-      slug: "lagos-fashion-week"
+      slug: "lagos-fashion-week",
     },
     {
       id: 3,
@@ -217,7 +241,7 @@ export default function Page() {
       author: "STYLE CORRESPONDENT",
       category: "FASHION",
       time: "23 MINS AGO",
-      slug: "african-designers-paris"
+      slug: "african-designers-paris",
     },
   ];
 
@@ -241,7 +265,7 @@ export default function Page() {
     return (
       <div className="relative min-h-screen bg-black text-white">
         <Headline />
-        
+
         {/* Loading Skeleton */}
         <motion.div
           variants={fadeUp}
@@ -268,7 +292,7 @@ export default function Page() {
             </div>
           ))}
         </div>
-        
+
         <div className="mx-0 sm:mx-6 md:mx-8 lg:mx-16">
           <Footer />
         </div>
@@ -314,12 +338,19 @@ export default function Page() {
                 alt={article.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 onError={(e) => {
-                  console.log('❌ Image failed to load:', article.image);
+                  console.log("❌ Image failed to load:", article.image);
                   // Fallback to local image
-                  const fashionImages = ['/images/minz.png', '/images/victony.png', '/images/wizkid.png'];
-                  const randomFashion = fashionImages[Math.floor(Math.random() * fashionImages.length)];
+                  const fashionImages = [
+                    "/images/minz.png",
+                    "/images/victony.png",
+                    "/images/wizkid.png",
+                  ];
+                  const randomFashion =
+                    fashionImages[
+                      Math.floor(Math.random() * fashionImages.length)
+                    ];
                   e.target.src = randomFashion;
-                  e.target.onerror = null; 
+                  e.target.onerror = null;
                 }}
               />
             </div>
@@ -345,7 +376,7 @@ export default function Page() {
           </motion.div>
         ))}
       </div>
-      
+
       {/* Load More Button - Only show if there are more articles */}
       {displayArticles.length > 0 && hasMore && (
         <div className="bg-black py-2 md:py-6 flex justify-center mt-2">
@@ -372,7 +403,7 @@ export default function Page() {
           <p className="text-white/60 text-sm">No more articles to load</p>
         </div>
       )}
-      
+
       <div className="mx-0 sm:mx-6 md:mx-8 lg:mx-16">
         {/* Footer */}
         <Footer />

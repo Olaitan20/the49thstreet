@@ -11,21 +11,27 @@ const getTimeAgo = (dateString) => {
   const diffInMins = Math.floor(diffInMs / (1000 * 60));
   const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
   const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+  const diffInMonths = Math.floor(diffInDays / 30);
+  const diffInYears = Math.floor(diffInDays / 365);
 
   if (diffInMins < 60) {
     return `${diffInMins} MINS AGO`;
   } else if (diffInHours < 24) {
     return `${diffInHours} HOURS AGO`;
-  } else {
+  } else if (diffInDays < 30) {
     return `${diffInDays} DAYS AGO`;
+  } else if (diffInMonths < 12) {
+    return `${diffInMonths} MONTH${diffInMonths > 1 ? "S" : ""} AGO`;
+  } else {
+    return `${diffInYears} YEAR${diffInYears > 1 ? "S" : ""} AGO`;
   }
 };
 
 // Function to decode HTML entities
 const decodeHtmlEntities = (text) => {
-  if (typeof text !== 'string') return text;
-  
-  const textarea = document.createElement('textarea');
+  if (typeof text !== "string") return text;
+
+  const textarea = document.createElement("textarea");
   textarea.innerHTML = text;
   return textarea.value;
 };
@@ -36,7 +42,7 @@ export default function Hero() {
   const [paused, setPaused] = useState(false);
   const [progress, setProgress] = useState(0);
   const [animating, setAnimating] = useState(false);
-  
+
   // State for API data - start empty
   const [featuredPosts, setFeaturedPosts] = useState([]);
   const [latestPosts, setLatestPosts] = useState([]);
@@ -47,34 +53,55 @@ export default function Hero() {
     const fetchPosts = async () => {
       try {
         setLoading(true);
-        
+
         // Use Promise.all to fetch both endpoints simultaneously
         const [slideshowResponse, sidebarResponse] = await Promise.all([
-          fetch('https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&per_page=12&orderby=date&order=desc'),
-          fetch('https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&per_page=12&orderby=date&order=desc') 
+          fetch(
+            "https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&per_page=12&orderby=date&order=desc",
+          ),
+          fetch(
+            "https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&per_page=12&orderby=date&order=desc",
+          ),
         ]);
 
         // Check if responses are ok
         if (!slideshowResponse.ok || !sidebarResponse.ok) {
-          throw new Error('API fetch failed');
+          throw new Error("API fetch failed");
         }
 
         // Parse responses
         const [slideshowData, sidebarData] = await Promise.all([
           slideshowResponse.json(),
-          sidebarResponse.json()
+          sidebarResponse.json(),
         ]);
 
+        // Helper function to extract author name safely
+        const getAuthorName = (post) => {
+          // First try to get from embedded author data
+          const embeddedAuthor = post._embedded?.author?.[0]?.name;
+          if (embeddedAuthor) {
+            return embeddedAuthor;
+          }
+          // Fallback to default
+          return "49TH STREET";
+        };
+
+        // Helper function to extract category safely
+        const getCategory = (post) => {
+          const categories = post._embedded?.["wp:term"]?.[0] || [];
+          return categories.length > 0 ? categories[0].name.toUpperCase() : "NEWS";
+        };
+
         // Process slideshow posts
-        const formattedSlides = slideshowData.slice(0, 10).map(post => {
-          const featuredImage = post._embedded?.['wp:featuredmedia']?.[0]?.source_url || '/images/placeholder.jpg';
-          const author = post._embedded?.author?.[0]?.name || '49TH STREET';
-          const categories = post._embedded?.['wp:term']?.[0] || [];
-          const category = categories.length > 0 ? categories[0].name.toUpperCase() : 'NEWS';
-          
-          // Decode HTML entities in title
+        const formattedSlides = slideshowData.slice(0, 10).map((post) => {
+          const featuredImage =
+            post._embedded?.["wp:featuredmedia"]?.[0]?.source_url ||
+            "/images/placeholder.jpg";
+
+          const author = getAuthorName(post);
+          const category = getCategory(post);
           const cleanTitle = decodeHtmlEntities(post.title.rendered);
-          
+
           return {
             id: post.id,
             image: featuredImage,
@@ -83,25 +110,22 @@ export default function Hero() {
             details: `${author} • ${category} • ${getTimeAgo(post.date)}`,
             slug: post.slug,
             category: category,
-            content: post.content?.rendered || '',
-            excerpt: post.excerpt?.rendered || ''
+            content: post.content?.rendered || "",
+            excerpt: post.excerpt?.rendered || "",
           };
         });
 
         // Process sidebar posts (exclude slideshow posts, take first 6)
-        const slideshowIds = slideshowData.slice(0, 5).map(post => post.id);
+        const slideshowIds = slideshowData.slice(0, 5).map((post) => post.id);
         const sidebarPosts = sidebarData
-          .filter(post => !slideshowIds.includes(post.id))
+          .filter((post) => !slideshowIds.includes(post.id))
           .slice(0, 6);
-        
-        const formattedNews = sidebarPosts.map(post => {
-          const author = post._embedded?.author?.[0]?.name || '49TH STREET';
-          const categories = post._embedded?.['wp:term']?.[0] || [];
-          const category = categories.length > 0 ? categories[0].name.toUpperCase() : 'NEWS';
-          
-          // Decode HTML entities in title
+
+        const formattedNews = sidebarPosts.map((post) => {
+          const author = getAuthorName(post);
+          const category = getCategory(post);
           const cleanTitle = decodeHtmlEntities(post.title.rendered);
-          
+
           return {
             id: post.id,
             title: cleanTitle,
@@ -109,17 +133,16 @@ export default function Hero() {
             category: category,
             time: getTimeAgo(post.date),
             slug: post.slug,
-            content: post.content?.rendered || '',
-            excerpt: post.excerpt?.rendered || ''
+            content: post.content?.rendered || "",
+            excerpt: post.excerpt?.rendered || "",
           };
         });
 
         // Update state with real data
         setFeaturedPosts(formattedSlides);
         setLatestPosts(formattedNews);
-
       } catch (error) {
-        console.error('Error fetching posts:', error);
+        console.error("Error fetching posts:", error);
         // No fallback - let loading state handle it
       } finally {
         setLoading(false);
@@ -129,19 +152,19 @@ export default function Hero() {
     fetchPosts();
   }, []);
 
-// In your Hero component, replace the handleArticleClick function:
   const handleArticleClick = (slug, postData) => {
     // Store the post data in sessionStorage for the article page to use
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('currentArticle', JSON.stringify(postData));
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("currentArticle", JSON.stringify(postData));
     }
     // Use proper Next.js navigation
     router.push(`/${encodeURIComponent(slug)}`);
   };
+
   // Auto-slide functionality
   const nextSlide = () => {
     if (featuredPosts.length === 0) return;
-    
+
     setAnimating(true);
     setTimeout(() => {
       setIndex((prev) => (prev + 1) % featuredPosts.length);
@@ -159,7 +182,7 @@ export default function Hero() {
           return 0;
         }
         return prev + 1;
-        });
+      });
     }, 100);
     return () => clearInterval(interval);
   }, [paused, index, featuredPosts.length]);
@@ -167,7 +190,7 @@ export default function Hero() {
   // Progress bar for current slide
   const progressBar = (
     <div className="absolute bottom-4 left-4 right-4 bg-white/20 h-1">
-      <div 
+      <div
         className="bg-white h-1 transition-all duration-100"
         style={{ width: `${progress}%` }}
       />
@@ -187,11 +210,14 @@ export default function Hero() {
             <div className="h-4 bg-gray-600 w-1/2"></div>
           </div>
         </div>
-        
-        {/* Loading skeleton for news sidebar - Now 6 items */}
+
+        {/* Loading skeleton for news sidebar */}
         <div className="hidden md:flex w-1/4 flex-col p-2 max-h-[50vh]">
-          {[1, 2, 3, 4, 5, 6].map(i => (
-            <div key={i} className="my-3 pb-2 border-b border-white/10 last:border-b-0">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div
+              key={i}
+              className="my-3 pb-2 border-b border-white/10 last:border-b-0"
+            >
               <div className="h-4 bg-gray-600 w-full mb-2"></div>
               <div className="h-3 bg-gray-600 w-3/4"></div>
             </div>
@@ -201,7 +227,7 @@ export default function Hero() {
     );
   }
 
-  // Show nothing if no data (shouldn't happen with fast API)
+  // Show nothing if no data
   if (featuredPosts.length === 0) {
     return (
       <div className="mx-0 sm:mx-6 md:mx-8 lg:mx-16 md:mt-1 flex gap-4 text-white">
@@ -225,28 +251,33 @@ export default function Hero() {
             <div
               key={index}
               className={`transition-all duration-500 ease-in-out ${
-                animating ? "opacity-0 translate-x-12" : "opacity-100 translate-x-0"
+                animating
+                  ? "opacity-0 translate-x-12"
+                  : "opacity-100 translate-x-0"
               }`}
             >
               {/* Make the slide clickable with dark overlay */}
-              <div 
-                onClick={() => handleArticleClick(featuredPosts[index].slug, featuredPosts[index])}
+              <div
+                onClick={() =>
+                  handleArticleClick(
+                    featuredPosts[index].slug,
+                    featuredPosts[index],
+                  )
+                }
                 className="relative group cursor-pointer"
               >
                 {/* Dark overlay */}
                 <div className="absolute inset-0 bg-black/30 z-10"></div>
-                
+
                 {/* Image with better object positioning */}
                 <img
                   src={featuredPosts[index].image}
                   alt={featuredPosts[index].title}
                   className="w-full h-[60vh] object-cover "
                   onError={(e) => {
-                    e.target.src = '/images/placeholder.jpg';
+                    e.target.src = "/images/placeholder.jpg";
                   }}
                 />
-                
-                {/* {progressBar} */}
               </div>
 
               {/* Captions BELOW the image */}
@@ -266,7 +297,7 @@ export default function Hero() {
         )}
       </div>
 
-      {/* Right: News List (1/4 width on desktop) - Now shows 6 items */}
+      {/* Right: News List (1/4 width on desktop) */}
       <div className="hidden md:flex w-1/4 flex-col p-2 max-h-[50vh]">
         {latestPosts.slice(0, 6).map((item, i) => (
           <div

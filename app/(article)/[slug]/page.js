@@ -5,6 +5,8 @@ import Editorial from "@/components/home/Editoral";
 import Footer from "@/components/layout/Footer";
 import Headline from "@/components/layout/Headline";
 import ShareBar from "@/components/ui/ShareBar";
+import Tags from "@/components/ui/Tags";
+import Head from "next/head";
 
 export default function ArticlePage() {
   const params = useParams();
@@ -65,10 +67,10 @@ export default function ArticlePage() {
 
           // If we can't extract slug, return original
           return match;
-        }
+        },
       );
     },
-    [extractSlugFromUrl]
+    [extractSlugFromUrl],
   );
 
   // Process images in content - add custom classes, center them, and reduce size
@@ -90,13 +92,13 @@ export default function ArticlePage() {
             // Add to existing class
             return match.replace(
               /class=["']([^"']*)["']/,
-              'class="$1 article-content-image"'
+              'class="$1 article-content-image"',
             );
           } else {
             // Add new class attribute
             return `<img${attributes} class="article-content-image" loading="lazy" onerror="this.src='/images/placeholder.jpg'; this.onerror=null;" />`;
           }
-        }
+        },
       );
 
       // Wrap images in centering divs if they're not already in figures
@@ -112,12 +114,12 @@ export default function ArticlePage() {
             return `<div class="image-wrapper"><img${attrs1}class="article-content-image"${attrs2}></div>`;
           }
           return match;
-        }
+        },
       );
 
       return processedHtml;
     },
-    [transformWordPressUrls]
+    [transformWordPressUrls],
   );
 
   // "Time ago" formatter
@@ -128,12 +130,15 @@ export default function ArticlePage() {
     const mins = Math.floor(diffInMs / (1000 * 60));
     const hours = Math.floor(mins / 60);
     const days = Math.floor(hours / 24);
+    const months = Math.floor(days / 30);
+    const years = Math.floor(days / 365);
 
     if (mins < 1) return "JUST NOW";
     if (mins < 60) return `${mins} MINS AGO`;
     if (hours < 24) return `${hours} HOURS AGO`;
-    if (days < 7) return `${days} DAYS AGO`;
-    return `${Math.floor(days / 7)} WEEKS AGO`;
+    if (days < 30) return `${days} DAYS AGO`;
+    if (months < 12) return `${months} MONTH${months > 1 ? "S" : ""} AGO`;
+    return `${years} YEAR${years > 1 ? "S" : ""} AGO`;
   }, []);
 
   // Strip HTML for alt text
@@ -143,7 +148,7 @@ export default function ArticlePage() {
       const decoded = decodeHtmlEntities(html);
       return decoded.replace(/<[^>]*>/g, "").trim();
     },
-    [decodeHtmlEntities]
+    [decodeHtmlEntities],
   );
 
   // Handle image errors for featured image
@@ -242,7 +247,7 @@ export default function ArticlePage() {
 
         // Try direct slug match first
         let response = await fetch(
-          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?slug=${slug}&_embed&per_page=1`
+          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?slug=${slug}&_embed=author,wp:featuredmedia,wp:term&per_page=1`,
         );
 
         if (!response.ok) {
@@ -255,8 +260,8 @@ export default function ArticlePage() {
         if (!posts || posts.length === 0) {
           const searchResponse = await fetch(
             `https://staging.the49thstreet.com/wp-json/wp/v2/posts?search=${encodeURIComponent(
-              slug
-            )}&_embed&per_page=1`
+              slug,
+            )}&_embed=author,wp:featuredmedia,wp:term&per_page=1`,
           );
 
           if (!searchResponse.ok) {
@@ -279,8 +284,27 @@ export default function ArticlePage() {
         }
 
         const categories = post._embedded?.["wp:term"]?.[0] || [];
+        const allTerms = post._embedded?.["wp:term"] || [];
+        const tags = allTerms.find(term => term && term.length > 0 && term[0]?.taxonomy === 'post_tag') || [];
         const primaryCategory =
           categories.length > 0 ? categories[0].name.toUpperCase() : "NEWS";
+
+        // Fetch author data if not embedded
+        let authorName = post._embedded?.author?.[0]?.name;
+        if (!authorName && post.author) {
+          try {
+            const authorResponse = await fetch(
+              `https://staging.the49thstreet.com/wp-json/wp/v2/users/${post.author}`,
+            );
+            if (authorResponse.ok) {
+              const authorData = await authorResponse.json();
+              authorName = authorData.name;
+            }
+          } catch (authorError) {
+            console.error("Error fetching author:", authorError);
+          }
+        }
+        authorName = authorName || "49TH STREET";
 
         // Format article data
         const articleData = {
@@ -292,7 +316,7 @@ export default function ArticlePage() {
           image:
             post._embedded?.["wp:featuredmedia"]?.[0]?.source_url ||
             "/images/placeholder.jpg",
-          author: post._embedded?.author?.[0]?.name || "49TH STREET",
+          author: authorName,
           date: new Date(post.date).toLocaleDateString("en-US", {
             year: "numeric",
             month: "long",
@@ -300,6 +324,7 @@ export default function ArticlePage() {
           }),
           time: getTimeAgo(post.date),
           category: primaryCategory,
+          tags: tags,
         };
 
         setArticle(articleData);
@@ -317,6 +342,43 @@ export default function ArticlePage() {
     }
   }, [slug, decodeHtmlEntities, getTimeAgo]);
 
+  useEffect(() => {
+  if (article && typeof document !== "undefined") {
+    // Update Open Graph meta tags
+    const updateMetaTags = () => {
+      // Remove existing OG tags
+      const existingTags = document.querySelectorAll('meta[property^="og:"]');
+      existingTags.forEach(tag => tag.remove());
+
+      // Create and add new OG tags
+      const ogTags = [
+        { property: "og:title", content: article.title },
+        { property: "og:description", content: stripHtml(article.excerpt || article.content).substring(0, 160) },
+        { property: "og:image", content: article.image },
+        { property: "og:url", content: typeof window !== "undefined" ? window.location.href : "" },
+        { property: "og:type", content: "article" },
+        { property: "twitter:card", content: "summary_large_image" },
+        { property: "twitter:title", content: article.title },
+        { property: "twitter:description", content: stripHtml(article.excerpt || article.content).substring(0, 160) },
+        { property: "twitter:image", content: article.image },
+      ];
+
+      ogTags.forEach(({ property, content }) => {
+        if (content) {
+          const meta = document.createElement("meta");
+          meta.setAttribute("property", property);
+          meta.setAttribute("content", content);
+          document.head.appendChild(meta);
+        }
+      });
+
+      // Also set document title
+      document.title = `${article.title} | 49th Street`;
+    };
+
+    updateMetaTags();
+  }
+}, [article, stripHtml]);
   // LOADING UI
   if (loading) {
     return (
@@ -432,6 +494,7 @@ export default function ArticlePage() {
             }}
           />
           <ShareBar article={article} />
+          <Tags tags={article.tags} currentArticleId={article.id} category={article.category} />
         </div>
 
         {/* RELATED CONTENT */}

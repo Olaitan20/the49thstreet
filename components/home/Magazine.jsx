@@ -23,13 +23,19 @@ export default function Magazine() {
     const diffInMins = Math.floor(diffInMs / (1000 * 60));
     const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
     const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    const diffInMonths = Math.floor(diffInDays / 30);
+    const diffInYears = Math.floor(diffInDays / 365);
 
     if (diffInMins < 60) {
       return `${diffInMins} mins ago`;
     } else if (diffInHours < 24) {
       return `${diffInHours} hrs ago`;
-    } else {
+    } else if (diffInDays < 30) {
       return `${diffInDays} days ago`;
+    } else if (diffInMonths < 12) {
+      return `${diffInMonths} month${diffInMonths > 1 ? "s" : ""} ago`;
+    } else {
+      return `${diffInYears} year${diffInYears > 1 ? "s" : ""} ago`;
     }
   };
 
@@ -38,7 +44,7 @@ export default function Magazine() {
     const fetchUncvrCategory = async () => {
       try {
         const uncvrCategoryResponse = await fetch(
-          "https://staging.the49thstreet.com/wp-json/wp/v2/categories?slug=uncovr"
+          "https://staging.the49thstreet.com/wp-json/wp/v2/categories?slug=uncovr",
         );
 
         if (!uncvrCategoryResponse.ok) {
@@ -50,7 +56,7 @@ export default function Magazine() {
 
         if (!category) {
           const allCategoriesResponse = await fetch(
-            "https://staging.the49thstreet.com/wp-json/wp/v2/categories"
+            "https://staging.the49thstreet.com/wp-json/wp/v2/categories",
           );
 
           if (allCategoriesResponse.ok) {
@@ -62,7 +68,7 @@ export default function Magazine() {
                 cat.slug.toLowerCase().includes("uncvr") ||
                 cat.name.toLowerCase().includes("uncvr") ||
                 cat.slug.toLowerCase().includes("magazine") ||
-                cat.name.toLowerCase().includes("magazine")
+                cat.name.toLowerCase().includes("magazine"),
             );
           }
         }
@@ -90,7 +96,7 @@ export default function Magazine() {
 
       if (uncvrCategoryId) {
         const postsResponse = await fetch(
-          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&categories=${uncvrCategoryId}&per_page=${perPage}&page=${pageNum}&orderby=date&order=desc`
+          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&categories=${uncvrCategoryId}&per_page=${perPage}&page=${pageNum}&orderby=date&order=desc`,
         );
 
         if (postsResponse.ok) {
@@ -104,7 +110,7 @@ export default function Magazine() {
 
       if (posts.length === 0) {
         const latestResponse = await fetch(
-          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&per_page=${perPage}&page=${pageNum}&orderby=date&order=desc`
+          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&per_page=${perPage}&page=${pageNum}&orderby=date&order=desc`,
         );
 
         if (latestResponse.ok) {
@@ -172,13 +178,13 @@ export default function Magazine() {
   // Handle next/previous for mobile carousel
   const handleNext = () => {
     setCurrentIndex((prev) =>
-      prev === displayMagazines.slice(0, 8).length - 1 ? 0 : prev + 1
+      prev === displayMagazines.slice(0, 8).length - 1 ? 0 : prev + 1,
     );
   };
 
   const handlePrev = () => {
     setCurrentIndex((prev) =>
-      prev === 0 ? displayMagazines.slice(0, 8).length - 1 : prev - 1
+      prev === 0 ? displayMagazines.slice(0, 8).length - 1 : prev - 1,
     );
   };
 
@@ -352,7 +358,7 @@ export default function Magazine() {
             /// UNCOVR
           </p>
           <p className="text-[16px] uppercase font-extrabold text-white">
-            Read UNCOVR 
+            Read UNCOVR
           </p>
         </div>
 
@@ -554,7 +560,7 @@ export default function Magazine() {
                 {mag.title}
               </p>
               <p className="text-[12px] uppercase text-white/60 mt-1 tracking-widest">
-                {mag.issue}
+                {/* {mag.issue} */}
               </p>
             </div>
           </div>
