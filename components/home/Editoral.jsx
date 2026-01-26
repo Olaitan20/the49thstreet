@@ -248,7 +248,7 @@ export default function Editorial() {
   // MAIN RENDER
   return (
     <div className="bg-white md:bg-transparent">
-      <section className="mx-0 sm:mx-6 md:mx-8 lg:mx-16 py-[24px] md:pt-0 md:mt-20">
+      <section className="mx-0 sm:mx-6 md:mx-8 lg:mx-16 py-[24px] md:pt-0 md:mb-10 md:mt">
         {/* Header */}
         <div className="mb-4 md:mb-8 px-4 md:px-0 flex items-center justify-between">
           <div>

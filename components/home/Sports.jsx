@@ -299,7 +299,7 @@ export default function Sports() {
           ))}
         </div>
 
-        <div className="bg-black py-4 md:py-0 flex justify-center md:mt-8 md:mb-8">
+        <div className="bg-black py-4 md:py-0 flex justify-center md:mt-8 ">
           <button
             onClick={handleLoadMore}
             disabled={loading}

@@ -265,7 +265,7 @@ export default function Latest() {
         </div>
 
         {/* Load More */}
-        <div className="bg-black py-4 flex justify-center md:mt-8 md:mb-4">
+        <div className="bg-black py-4 flex justify-center md:mt-8 ">
           <button
             onClick={handleLoadMore}
             disabled={loading}
