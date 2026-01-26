@@ -13,7 +13,18 @@ export default function Magazine() {
   const [uncvrCategoryId, setUncvrCategoryId] = useState(null);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
-  const [desktopBatchIndex, setDesktopBatchIndex] = useState(0);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  // Check if desktop on mount and resize
+  useEffect(() => {
+    const checkIfDesktop = () => {
+      setIsDesktop(window.innerWidth >= 768);
+    };
+
+    checkIfDesktop();
+    window.addEventListener("resize", checkIfDesktop);
+    return () => window.removeEventListener("resize", checkIfDesktop);
+  }, []);
 
   // Function to calculate time ago
   const getTimeAgo = (dateString) => {
@@ -91,7 +102,7 @@ export default function Magazine() {
       let posts = [];
       let totalPages = 1;
 
-      // Fetch 8 posts for mobile carousel
+      // Fetch 8 posts for carousel
       const perPage = 8;
 
       if (uncvrCategoryId) {
@@ -175,7 +186,7 @@ export default function Magazine() {
     }, 1500);
   };
 
-  // Handle next/previous for mobile carousel
+  // Handle next/previous for carousel
   const handleNext = () => {
     setCurrentIndex((prev) =>
       prev === displayMagazines.slice(0, 8).length - 1 ? 0 : prev + 1,
@@ -186,16 +197,6 @@ export default function Magazine() {
     setCurrentIndex((prev) =>
       prev === 0 ? displayMagazines.slice(0, 8).length - 1 : prev - 1,
     );
-  };
-
-  // Handle desktop arrows - cycle through batches
-  const handleDesktopNext = () => {
-    setDesktopBatchIndex((prev) => (prev + 1) % 3);
-  };
-
-  // Handle desktop arrows - cycle through batches
-  const handleDesktopPrev = () => {
-    setDesktopBatchIndex((prev) => (prev - 1 + 3) % 3);
   };
 
   // Handle individual magazine click
@@ -291,17 +292,7 @@ export default function Magazine() {
   ];
 
   const displayMagazines = magazines.length > 0 ? magazines : staticMagazines;
-  const mobileMagazines = displayMagazines.slice(0, 8);
-
-  // Get desktop batch articles (3+3+2 pattern)
-  const getDesktopBatchArticles = () => {
-    const batches = [
-      displayMagazines.slice(0, 3), // First 3 articles
-      displayMagazines.slice(3, 6), // Next 3 articles
-      displayMagazines.slice(6, 8), // Last 2 articles
-    ];
-    return batches[desktopBatchIndex] || [];
-  };
+  const visibleMagazines = displayMagazines.slice(0, 8);
 
   if (isLoadingMagazines && magazines.length === 0) {
     return (
@@ -317,31 +308,16 @@ export default function Magazine() {
           </div>
         </div>
 
-        <div className="hidden md:grid grid-cols-3 gap-0 mb-6">
-          {[1, 2, 3].map((item) => (
-            <div key={item} className="bg-gray-700 animate-pulse">
-              <div className="w-full h-[586px] bg-gray-600"></div>
-              <div className="bg-black px-2 py-3 text-left">
-                <div className="h-3 w-16 bg-gray-600 mb-2"></div>
-                <div className="h-4 w-3/4 bg-gray-600 mb-2"></div>
-                <div className="h-3 w-24 bg-gray-600"></div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Mobile Loading Skeleton */}
-        <div className="md:hidden">
-          <div className="relative w-full h-[300px] overflow-hidden">
-            <div className="w-full h-full bg-gray-700 animate-pulse"></div>
-            <div className="bg-black py-3 px-4">
-              <div className="h-3 w-16 bg-gray-600 mb-2"></div>
-              <div className="h-4 w-3/4 bg-gray-600 mb-2"></div>
-              <div className="h-3 w-24 bg-gray-600 mb-4"></div>
-              <div className="flex justify-end gap-2">
-                <div className="w-8 h-8 rounded-full bg-gray-600"></div>
-                <div className="w-8 h-8 rounded-full bg-gray-600"></div>
-              </div>
+        {/* Loading Skeleton */}
+        <div className="relative w-full h-[300px] overflow-hidden">
+          <div className="w-full h-full bg-gray-700 animate-pulse"></div>
+          <div className="bg-black py-3 px-4">
+            <div className="h-3 w-16 bg-gray-600 mb-2"></div>
+            <div className="h-4 w-3/4 bg-gray-600 mb-2"></div>
+            <div className="h-3 w-24 bg-gray-600 mb-4"></div>
+            <div className="flex justify-end gap-2">
+              <div className="w-8 h-8 rounded-full bg-gray-600"></div>
+              <div className="w-8 h-8 rounded-full bg-gray-600"></div>
             </div>
           </div>
         </div>
@@ -362,11 +338,11 @@ export default function Magazine() {
           </p>
         </div>
 
-        {/* Desktop Arrows */}
-        {displayMagazines.length > 0 && (
-          <div className="hidden sm:flex items-center gap-3">
+        {/* Desktop Arrows - shown on all screen sizes */}
+        {visibleMagazines.length > 0 && (
+          <div className="flex items-center gap-3">
             <button
-              onClick={handleDesktopPrev}
+              onClick={handlePrev}
               className="p-2 rounded-full border border-white/20 hover:bg-white/10 transition disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isLoadingMagazines}
             >
@@ -386,7 +362,7 @@ export default function Magazine() {
               </svg>
             </button>
             <button
-              onClick={handleDesktopNext}
+              onClick={handleNext}
               className="p-2 rounded-full border border-white/20 hover:bg-white/10 transition disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isLoadingMagazines}
             >
@@ -409,162 +385,127 @@ export default function Magazine() {
         )}
       </div>
 
-      {/* ===== MOBILE VIEW (Horizontal Carousel) ===== */}
-      <div className="md:hidden">
-        <div className="relative overflow-hidden">
-          {/* Carousel Container */}
-          <div
-            className="flex transition-transform duration-500 ease-out"
-            style={{ transform: `translateX(-${currentIndex * 100}%)` }}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-          >
-            {mobileMagazines.map((mag, index) => (
-              <div key={`${mag.id}-${index}`} className="w-full flex-shrink-0">
-                <div
-                  onClick={() => handleMagazineClick(mag.slug)}
-                  className="cursor-pointer group mx-1"
+      {/* ===== HORIZONTAL CAROUSEL (Same for mobile and desktop) ===== */}
+      <div className="relative overflow-hidden">
+        {/* Carousel Container */}
+        <div
+          className="flex transition-transform duration-500 ease-out"
+          style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          {visibleMagazines.map((mag, index) => (
+            <div key={`${mag.id}-${index}`} className="w-full flex-shrink-0">
+              <div
+                onClick={() => handleMagazineClick(mag.slug)}
+                className="cursor-pointer group mx-1"
+              >
+                <div 
+                  className={`relative w-full overflow-hidden ${
+                    isDesktop ? 'h-[586px]' : 'h-64'
+                  }`}
                 >
-                  <div className="relative w-full h-64 overflow-hidden">
-                    <img
-                      src={mag.src}
-                      alt={mag.title}
-                      className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105"
-                      onError={(e) => {
-                        const localImages = [
-                          "/images/magazine.png",
-                          "/images/magazine2.png",
-                          "/images/magazine.png",
-                        ];
-                        const randomLocal =
-                          localImages[index % localImages.length];
-                        e.target.src = randomLocal;
-                        e.target.onerror = null;
-                      }}
-                    />
-                  </div>
+                  <img
+                    src={mag.src}
+                    alt={mag.title}
+                    className="w-full h-full object-contain transform transition-transform duration-700 group-hover:scale-105"
+                    onError={(e) => {
+                      const localImages = [
+                        "/images/magazine.png",
+                        "/images/magazine2.png",
+                        "/images/magazine.png",
+                      ];
+                      const randomLocal =
+                        localImages[index % localImages.length];
+                      e.target.src = randomLocal;
+                      e.target.onerror = null;
+                    }}
+                  />
+                </div>
 
-                  {/* Caption */}
-                  <div className="bg-black py-3 px-4">
-                    <div>
-                      <p className="text-[12px] uppercase tracking-widest text-white/50">
-                        // uncvr
-                      </p>
-                      <p className="text-[14px] font-bold text-white mt-2">
-                        {mag.title}
-                      </p>
-                      {/* Uncomment if you want issue text */}
-                      {/* <p className="text-[12px] uppercase text-white/60 mt-2 tracking-widest">
-                        {mag.issue}
-                      </p> */}
-                    </div>
+                {/* Caption */}
+                <div className="bg-black text-center py-3 px-4">
+                  <div>
+                    <p className="text-[12px] uppercase tracking-widest text-white/50">
+                      // uncvr
+                    </p>
+                    <p className={`font-bold text-white mt-2 ${
+                      isDesktop ? 'text-[16px]' : 'text-[14px]'
+                    }`}>
+                      {mag.title}
+                    </p>
+                    {/* Uncomment if you want issue text */}
+                    {/* <p className="text-[12px] uppercase text-white/60 mt-2 tracking-widest">
+                      {mag.issue}
+                    </p> */}
                   </div>
                 </div>
               </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Mobile Navigation Buttons (hidden on desktop) */}
+        {visibleMagazines.length > 1 && !isDesktop && (
+          <>
+            <button
+              onClick={handlePrev}
+              className="absolute left-2 top-1/2 transform -translate-y-1/2 p-2 rounded-full border border-white/20 bg-black/50 hover:bg-black/70 transition z-10"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="1.8"
+                stroke="white"
+                className="w-5 h-5"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+            </button>
+
+            <button
+              onClick={handleNext}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-full border border-white/20 bg-black/50 hover:bg-black/70 transition z-10"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="1.8"
+                stroke="white"
+                className="w-5 h-5"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+          </>
+        )}
+
+        {/* Dots Indicator */}
+        {visibleMagazines.length > 1 && (
+          <div className="flex justify-center mt-4 space-x-2">
+            {visibleMagazines.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentIndex(index)}
+                className={`w-2 h-2 rounded-full transition ${
+                  index === currentIndex ? "bg-white" : "bg-white/40"
+                }`}
+                aria-label={`Go to slide ${index + 1}`}
+              />
             ))}
           </div>
-
-          {/* Navigation Buttons */}
-          {mobileMagazines.length > 1 && (
-            <>
-              <button
-                onClick={handlePrev}
-                className="absolute left-2 top-1/2 transform -translate-y-1/2 p-2 rounded-full border border-white/20 bg-black/50 hover:bg-black/70 transition z-10"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth="1.8"
-                  stroke="white"
-                  className="w-5 h-5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
-              </button>
-
-              <button
-                onClick={handleNext}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-full border border-white/20 bg-black/50 hover:bg-black/70 transition z-10"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth="1.8"
-                  stroke="white"
-                  className="w-5 h-5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </button>
-            </>
-          )}
-
-          {/* Dots Indicator */}
-          {mobileMagazines.length > 1 && (
-            <div className="flex justify-center mt-4 space-x-2">
-              {mobileMagazines.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentIndex(index)}
-                  className={`w-2 h-2 rounded-full transition ${
-                    index === currentIndex ? "bg-white" : "bg-white/40"
-                  }`}
-                  aria-label={`Go to slide ${index + 1}`}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ===== DESKTOP VIEW (Grid of 3 magazines) ===== */}
-      <div className="hidden md:grid grid-cols-3 gap-0 mb-6">
-        {getDesktopBatchArticles().map((mag, index) => (
-          <div
-            key={`${mag.id}-${index}`}
-            onClick={() => handleMagazineClick(mag.slug)}
-            className="cursor-pointer group"
-          >
-            <div className="relative w-full h-[586px] overflow-hidden">
-              <img
-                src={mag.src}
-                alt={mag.title}
-                className="w-fit h-full object-cover transform transition-transform duration-700 group-hover:scale-105"
-                onError={(e) => {
-                  const localImages = [
-                    "/images/magazine.png",
-                    "/images/magazine2.png",
-                  ];
-                  const randomLocal = localImages[index % localImages.length];
-                  e.target.src = randomLocal;
-                  e.target.onerror = null;
-                }}
-              />
-            </div>
-            <div className="bg-black px-2 py-3 text-left">
-              <p className="text-[12px] uppercase tracking-widest text-white/50">
-                // uncvr
-              </p>
-              <p className="text-[12px] font-bold text-white mt-1">
-                {mag.title}
-              </p>
-              <p className="text-[12px] uppercase text-white/60 mt-1 tracking-widest">
-                {/* {mag.issue} */}
-              </p>
-            </div>
-          </div>
-        ))}
+        )}
       </div>
     </section>
   );
