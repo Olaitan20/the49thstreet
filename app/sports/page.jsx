@@ -31,6 +31,7 @@ export default function Page() {
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [contributorsMap, setContributorsMap] = useState({});
 
   const SPORTS_CATEGORY_ID = 647;
 
@@ -55,8 +56,34 @@ export default function Page() {
     return `${diffInDays} DAYS AGO`;
   };
 
-  
+  // Fetch contributors first
+  useEffect(() => {
+    const fetchContributors = async () => {
+      try {
+        const contributorsResponse = await fetch(
+          "https://staging.the49thstreet.com/wp-json/the49th/v1/contributors"
+        );
+
+        if (contributorsResponse.ok) {
+          const contributors = await contributorsResponse.json();
+          const contribMap = {};
+          contributors.forEach((contributor) => {
+            contribMap[contributor.id] = contributor.name;
+          });
+          setContributorsMap(contribMap);
+        }
+      } catch (error) {
+        console.error("Error fetching contributors:", error);
+      }
+    };
+
+    fetchContributors();
+  }, []);
+
+  // Fetch articles function
   const handleArticles = async (pageNum = 1) => {
+    if (Object.keys(contributorsMap).length === 0) return; // Wait for contributors
+
     try {
       setLoading(true);
       setError(null);
@@ -79,14 +106,23 @@ export default function Page() {
             index % 3
           ];
 
+        // Get contributor name from contributors map
+        const contributorId = post.author;
+        let contributorName = "SPORTS DESK"; // Default fallback
+        
+        if (contributorId && contributorsMap[contributorId]) {
+          contributorName = contributorsMap[contributorId];
+        }
+
         return {
           id: post.id,
           image,
           title: decodeHtmlEntities(post.title.rendered),
-          author: post._embedded?.author?.[0]?.name || "SPORTS DESK",
+          contributor: contributorName,
           category: "49TH SPORTS",
           time: getTimeAgo(post.date),
           slug: post.slug,
+          contributorId: post.author,
         };
       });
 
@@ -102,13 +138,17 @@ export default function Page() {
     }
   };
 
-  // Initial fetch
+  // Initial fetch - wait for contributors
   useEffect(() => {
-    handleArticles(1);
-  }, []);
+    if (Object.keys(contributorsMap).length > 0) {
+      handleArticles(1);
+    }
+  }, [contributorsMap]);
 
   const handleLoadMore = () => {
-    if (!loading && hasMore) handleArticles(page + 1);
+    if (!loading && hasMore && Object.keys(contributorsMap).length > 0) {
+      handleArticles(page + 1);
+    }
   };
 
   const fadeUp = {
@@ -119,6 +159,20 @@ export default function Page() {
       transition: { delay: i * 0.1, duration: 0.6, ease: "easeOut" },
     }),
   };
+
+  // Show loading while waiting for contributors
+  if (apiLoading && Object.keys(contributorsMap).length === 0) {
+    return (
+      <div className="relative min-h-screen bg-black text-white">
+        <Headline />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mx-0 sm:mx-6 md:mx-8 lg:mx-16">
+          {Array.from({ length: 9 }).map((_, i) => (
+            <ArticleSkeleton key={i} index={i} />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen bg-black text-white">
@@ -166,7 +220,7 @@ export default function Page() {
                 <div className="p-4 md:p-6">
                   <p className="text-sm md:text-[16px] font-bold truncate text-black mb-3 leading-tight">{article.title}</p>
                   <div className="flex sm:flex-row sm:items-center gap-1 sm:gap-0">
-                    <span className="text-[12px] text-black/50 ">{article.author?.toUpperCase()}</span>
+                    <span className="text-[12px] text-black/50 ">{article.contributor?.toUpperCase()}</span>
                     <span className="inline text-xs text-gray-400 sm:mx-1">•</span>
                     <span className="text-[12px] text-black/50 ">{article.category}</span>
                     <span className="inline text-xs text-gray-400 sm:mx-1">•</span>

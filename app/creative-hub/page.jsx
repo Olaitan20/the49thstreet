@@ -43,10 +43,37 @@ export default function Page() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [creativeHubCategoryId, setCreativeHubCategoryId] = useState(null);
+  const [contributorsMap, setContributorsMap] = useState({});
+
+  // Fetch contributors first
+  useEffect(() => {
+    const fetchContributors = async () => {
+      try {
+        const contributorsResponse = await fetch(
+          "https://staging.the49thstreet.com/wp-json/the49th/v1/contributors"
+        );
+
+        if (contributorsResponse.ok) {
+          const contributors = await contributorsResponse.json();
+          const contribMap = {};
+          contributors.forEach((contributor) => {
+            contribMap[contributor.id] = contributor.name;
+          });
+          setContributorsMap(contribMap);
+        }
+      } catch (error) {
+        console.error("Error fetching contributors:", error);
+      }
+    };
+
+    fetchContributors();
+  }, []);
 
   // Fetch categories and Creative Hub articles from WordPress API
   useEffect(() => {
     const fetchData = async () => {
+      if (Object.keys(contributorsMap).length === 0) return; // Wait for contributors
+
       try {
         setApiLoading(true);
         setError(null);
@@ -87,10 +114,12 @@ export default function Page() {
     };
 
     fetchData();
-  }, []);
+  }, [contributorsMap]);
 
   // Function to fetch articles with pagination
   const fetchArticles = async (pageNum, categoryId = creativeHubCategoryId) => {
+    if (Object.keys(contributorsMap).length === 0) return; // Wait for contributors
+
     try {
       setLoading(true);
       setError(null);
@@ -137,7 +166,14 @@ export default function Page() {
           featuredImage = creativeImages[index % creativeImages.length];
         }
         
-        const author = post._embedded?.author?.[0]?.name || 'CREATIVE DESK';
+        // Get contributor name from contributors map
+        const contributorId = post.author;
+        let contributorName = 'CREATIVE DESK'; // Default fallback
+        
+        if (contributorId && contributorsMap[contributorId]) {
+          contributorName = contributorsMap[contributorId];
+        }
+        
         const postCategories = post._embedded?.['wp:term']?.[0] || [];
         
         // Use Creative Hub category name if available, otherwise use first category or default to CREATIVE HUB
@@ -160,10 +196,11 @@ export default function Page() {
           id: post.id,
           image: featuredImage,
           title: cleanTitle,
-          author: author,
+          contributor: contributorName,
           category: category,
           time: getTimeAgo(post.date),
-          slug: post.slug
+          slug: post.slug,
+          contributorId: post.author,
         };
       });
       
@@ -184,9 +221,9 @@ export default function Page() {
     }
   };
 
-  // Load more handler - FIXED
+  // Load more handler
   const handleLoadMore = () => {
-    if (!loading && hasMore) {
+    if (!loading && hasMore && Object.keys(contributorsMap).length > 0) {
       fetchArticles(page + 1, creativeHubCategoryId);
     }
   };
@@ -215,6 +252,20 @@ export default function Page() {
       },
     }),
   };
+
+  // Show loading while waiting for contributors
+  if (apiLoading && Object.keys(contributorsMap).length === 0) {
+    return (
+      <div className="relative min-h-screen bg-black text-white">
+        <Headline />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mx-0 sm:mx-6 md:mx-8 lg:mx-16">
+          {Array.from({ length: 9 }).map((_, index) => (
+            <ArticleSkeleton key={index} index={index} />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen bg-black text-white">
@@ -291,7 +342,7 @@ export default function Page() {
                 
                 <div className="flex truncate sm:flex-row sm:items-center gap-1 sm:gap-0">
                   <span className="text-[12px] text-black/50 ">
-                    {article.author?.toUpperCase()}
+                    {article.contributor?.toUpperCase()}
                   </span>
                   <span className="inline text-xs text-gray-400 sm:mx-1 ">
                     •

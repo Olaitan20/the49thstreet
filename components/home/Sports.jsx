@@ -7,6 +7,7 @@ export default function Sports() {
   const [loading, setLoading] = useState(false);
   const [articles, setArticles] = useState([]);
   const [isLoadingArticles, setIsLoadingArticles] = useState(true);
+  const [contributorsMap, setContributorsMap] = useState({});
 
   // Function to calculate time ago
   const getTimeAgo = (dateString) => {
@@ -32,9 +33,35 @@ export default function Sports() {
     }
   };
 
-  // Fetch sports category posts
+  // Fetch contributors first
+  useEffect(() => {
+    const fetchContributors = async () => {
+      try {
+        const contributorsResponse = await fetch(
+          "https://staging.the49thstreet.com/wp-json/the49th/v1/contributors"
+        );
+
+        if (contributorsResponse.ok) {
+          const contributors = await contributorsResponse.json();
+          const contribMap = {};
+          contributors.forEach((contributor) => {
+            contribMap[contributor.id] = contributor.name;
+          });
+          setContributorsMap(contribMap);
+        }
+      } catch (error) {
+        console.error("Error fetching contributors:", error);
+      }
+    };
+
+    fetchContributors();
+  }, []);
+
+  // Fetch sports category posts after contributors are loaded
   useEffect(() => {
     const fetchSportsPosts = async () => {
+      if (Object.keys(contributorsMap).length === 0) return; // Wait for contributors
+
       try {
         setIsLoadingArticles(true);
 
@@ -91,7 +118,14 @@ export default function Sports() {
             featuredImage = sportsImages[index % sportsImages.length];
           }
 
-          const author = post._embedded?.author?.[0]?.name || "SPORTS DESK";
+          // Get contributor name from contributors map
+          const contributorId = post.author;
+          let contributorName = "SPORTS DESK"; // Default fallback
+          
+          if (contributorId && contributorsMap[contributorId]) {
+            contributorName = contributorsMap[contributorId];
+          }
+
           const postCategories = post._embedded?.["wp:term"]?.[0] || [];
 
           let category = "SPORTS";
@@ -105,24 +139,30 @@ export default function Sports() {
             id: post.id,
             image: featuredImage,
             title: post.title.rendered,
-            author,
+            contributor: contributorName,
             category,
             time: getTimeAgo(post.date),
             slug: post.slug,
+            contributorId: post.author,
           };
         });
 
         setArticles(formattedArticles);
       } catch (error) {
         console.error("Error fetching sports posts:", error);
-        setArticles(staticArticles);
+        // Update static articles to use contributor instead of author
+        setArticles(staticArticles.map(article => ({
+          ...article,
+          contributor: article.author, // Convert author to contributor
+          contributorId: null
+        })));
       } finally {
         setIsLoadingArticles(false);
       }
     };
 
     fetchSportsPosts();
-  }, []);
+  }, [contributorsMap]); // Re-fetch posts when contributorsMap changes
 
   const handleLoadMore = () => {
     setLoading(true);
@@ -161,9 +201,13 @@ export default function Sports() {
     },
   ];
 
-  const displayArticles = articles.length > 0 ? articles : staticArticles;
+  const displayArticles = articles.length > 0 ? articles : staticArticles.map(article => ({
+    ...article,
+    contributor: article.author // Convert author to contributor for static articles
+  }));
 
-  if (isLoadingArticles) {
+  // Show loading state while waiting for contributors or articles
+  if (isLoadingArticles || Object.keys(contributorsMap).length === 0) {
     return (
       <div className="bg-white md:bg-transparent">
         <section className="mx-0 sm:mx-6 md:mx-8 lg:mx-16 pt-[24px] md:pt-0 md:mt-20">
@@ -239,7 +283,7 @@ export default function Sports() {
 
                 <div className="flex flex-row items-center gap-1">
                   <span className="text-[12px] text-black/50 ">
-                    {article.author?.toUpperCase()}
+                    {article.contributor?.toUpperCase()}
                   </span>
                   <span className="text-xs text-gray-400">•</span>
                   <span className="text-[12px] text-black/50 ">

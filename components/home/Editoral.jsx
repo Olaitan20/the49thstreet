@@ -7,6 +7,7 @@ export default function Editorial() {
   const [loading, setLoading] = useState(false);
   const [articles, setArticles] = useState([]);
   const [isLoadingArticles, setIsLoadingArticles] = useState(true);
+  const [contributorsMap, setContributorsMap] = useState({});
 
   // Function to calculate time ago
   const getTimeAgo = (dateString) => {
@@ -40,9 +41,35 @@ export default function Editorial() {
     return textArea.value;
   };
 
-  // Fetch 49th-exclusive category posts
+  // Fetch contributors first
+  useEffect(() => {
+    const fetchContributors = async () => {
+      try {
+        const contributorsResponse = await fetch(
+          "https://staging.the49thstreet.com/wp-json/the49th/v1/contributors"
+        );
+
+        if (contributorsResponse.ok) {
+          const contributors = await contributorsResponse.json();
+          const contribMap = {};
+          contributors.forEach((contributor) => {
+            contribMap[contributor.id] = contributor.name;
+          });
+          setContributorsMap(contribMap);
+        }
+      } catch (error) {
+        console.error("Error fetching contributors:", error);
+      }
+    };
+
+    fetchContributors();
+  }, []);
+
+  // Fetch 49th-exclusive category posts after contributors are loaded
   useEffect(() => {
     const fetchExclusivePosts = async () => {
+      if (Object.keys(contributorsMap).length === 0) return; // Wait for contributors
+
       try {
         setIsLoadingArticles(true);
 
@@ -81,7 +108,14 @@ export default function Editorial() {
               index % 3
             ];
 
-          const author = post._embedded?.author?.[0]?.name || "49TH STREET";
+          // Get contributor name from contributors map
+          const contributorId = post.author;
+          let contributorName = "49TH STREET"; // Default fallback
+          
+          if (contributorId && contributorsMap[contributorId]) {
+            contributorName = contributorsMap[contributorId];
+          }
+          
           const categories = post._embedded?.["wp:term"]?.[0] || [];
           const category =
             categories.length > 0
@@ -92,32 +126,38 @@ export default function Editorial() {
             id: post.id,
             image: featuredImage,
             title: decodeHtmlEntities(post.title.rendered),
-            author,
+            contributor: contributorName,
             category,
             time: getTimeAgo(post.date),
             slug: post.slug,
+            contributorId: post.author,
           };
         });
 
         setArticles(formatted);
       } catch (error) {
         console.error(error);
-        setArticles(staticArticles);
+        // Convert static articles to use contributor instead of author
+        setArticles(staticArticles.map(article => ({
+          ...article,
+          contributor: article.author, // Convert author to contributor
+          contributorId: null
+        })));
       } finally {
         setIsLoadingArticles(false);
       }
     };
 
     fetchExclusivePosts();
-  }, []);
+  }, [contributorsMap]); // Re-fetch posts when contributorsMap changes
 
-  // See all handler
+  // See all handler - links to feed page
   const handleSeeAll = () => {
     setLoading(true);
-    setTimeout(() => router.push("/"), 1500);
+    setTimeout(() => router.push("/news"), 1500); // Changed to /feed
   };
 
-  // Static fallback*
+  // Static fallback
   const staticArticles = [
     {
       id: 1,
@@ -149,10 +189,15 @@ export default function Editorial() {
     },
   ];
 
-  const displayArticles = articles.length > 0 ? articles : staticArticles;
+  const displayArticles = articles.length > 0 
+    ? articles 
+    : staticArticles.map(article => ({
+        ...article,
+        contributor: article.author // Convert author to contributor
+      }));
 
   // Loading State UI
-  if (isLoadingArticles) {
+  if (isLoadingArticles || Object.keys(contributorsMap).length === 0) {
     return (
       <div className="bg-white md:bg-transparent">
         <section className="mx-0 sm:mx-6 md:mx-8 lg:mx-16 pt-[24px] md:pt-0 md:mt-20">
@@ -253,7 +298,7 @@ export default function Editorial() {
                 </p>
 
                 <div className="mt-4 flex items-center flex-wrap gap-1 text-[12px] text-black/60 md:text-white/60">
-                  <span>{article.author?.toUpperCase()}</span>
+                  <span>{article.contributor?.toUpperCase()}</span>
                   <span>•</span>
                   <span>{article.category}</span>
                   <span>•</span>

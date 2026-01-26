@@ -43,6 +43,31 @@ export default function Page() {
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
+  const [contributorsMap, setContributorsMap] = useState({});
+
+  // Fetch contributors first
+  useEffect(() => {
+    const fetchContributors = async () => {
+      try {
+        const contributorsResponse = await fetch(
+          "https://staging.the49thstreet.com/wp-json/the49th/v1/contributors"
+        );
+
+        if (contributorsResponse.ok) {
+          const contributors = await contributorsResponse.json();
+          const contribMap = {};
+          contributors.forEach((contributor) => {
+            contribMap[contributor.id] = contributor.name;
+          });
+          setContributorsMap(contribMap);
+        }
+      } catch (error) {
+        console.error("Error fetching contributors:", error);
+      }
+    };
+
+    fetchContributors();
+  }, []);
 
   // Fetch categories
   useEffect(() => {
@@ -67,6 +92,8 @@ export default function Page() {
 
   // Fetch articles with pagination
   const fetchArticles = async (pageNumber) => {
+    if (Object.keys(contributorsMap).length === 0) return []; // Wait for contributors
+
     try {
       setLoading(true);
       setError(null);
@@ -100,9 +127,11 @@ export default function Page() {
     }
   };
 
-  // Initial fetch
+  // Initial fetch - wait for contributors
   useEffect(() => {
     const initialFetch = async () => {
+      if (Object.keys(contributorsMap).length === 0) return;
+      
       setApiLoading(true);
       const initialArticles = await fetchArticles(1);
       setArticles(initialArticles);
@@ -111,11 +140,11 @@ export default function Page() {
     };
 
     initialFetch();
-  }, []);
+  }, [contributorsMap]);
 
   // Load more articles
   const handleLoadMore = async () => {
-    if (loading || !hasMore) return;
+    if (loading || !hasMore || Object.keys(contributorsMap).length === 0) return;
 
     const nextPage = page + 1;
     const newArticles = await fetchArticles(nextPage);
@@ -149,8 +178,16 @@ export default function Page() {
     return `${Math.floor(diff / 1440)} DAYS AGO`;
   };
 
-  const getAuthorName = (post) =>
-    post._embedded?.author?.[0]?.name || "49TH STREET";
+  // Get contributor name from contributors map
+  const getContributorName = (post) => {
+    const contributorId = post.author;
+    // Try to get from contributors map first
+    if (contributorId && contributorsMap[contributorId]) {
+      return contributorsMap[contributorId];
+    }
+    // Fallback to embedded author data
+    return post._embedded?.author?.[0]?.name || "49TH STREET";
+  };
 
   const getFeaturedImage = (post) =>
     post._embedded?.["wp:featuredmedia"]?.[0]?.source_url ||
@@ -167,6 +204,20 @@ export default function Page() {
       transition: { delay: i * 0.1, duration: 0.6, ease: "easeOut" },
     }),
   };
+
+  // Show loading while waiting for contributors
+  if (apiLoading && Object.keys(contributorsMap).length === 0) {
+    return (
+      <div className="relative min-h-screen bg-black text-white overflow-x-hidden">
+        <Headline />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 px-0 sm:px-6 md:px-8 lg:px-16 gap-0">
+          {Array.from({ length: 9 }).map((_, index) => (
+            <ArticleSkeleton key={index} index={index} />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen bg-black text-white overflow-x-hidden">
@@ -237,7 +288,7 @@ export default function Page() {
 
                 <div className="flex gap-1 sm:gap-0 flex-row items-center">
                   <span className="text-[12px] text-black/50 ">
-                    {getAuthorName(article)}
+                    {getContributorName(article)}
                   </span>
                   <span className="inline text-xs text-gray-400 sm:mx-1">
                     •

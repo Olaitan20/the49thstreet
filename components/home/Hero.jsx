@@ -47,10 +47,37 @@ export default function Hero() {
   const [featuredPosts, setFeaturedPosts] = useState([]);
   const [latestPosts, setLatestPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [contributorsMap, setContributorsMap] = useState({});
 
-  // Fast API fetching with optimization
+  // Fetch contributors first
+  useEffect(() => {
+    const fetchContributors = async () => {
+      try {
+        const contributorsResponse = await fetch(
+          "https://staging.the49thstreet.com/wp-json/the49th/v1/contributors"
+        );
+
+        if (contributorsResponse.ok) {
+          const contributors = await contributorsResponse.json();
+          const contribMap = {};
+          contributors.forEach((contributor) => {
+            contribMap[contributor.id] = contributor.name;
+          });
+          setContributorsMap(contribMap);
+        }
+      } catch (error) {
+        console.error("Error fetching contributors:", error);
+      }
+    };
+
+    fetchContributors();
+  }, []);
+
+  // Fetch posts after contributors are loaded
   useEffect(() => {
     const fetchPosts = async () => {
+      if (Object.keys(contributorsMap).length === 0) return; // Wait for contributors
+
       try {
         setLoading(true);
 
@@ -75,12 +102,12 @@ export default function Hero() {
           sidebarResponse.json(),
         ]);
 
-        // Helper function to extract author name safely
-        const getAuthorName = (post) => {
-          // First try to get from embedded author data
-          const embeddedAuthor = post._embedded?.author?.[0]?.name;
-          if (embeddedAuthor) {
-            return embeddedAuthor;
+        // Helper function to extract contributor name safely
+        const getContributorName = (post) => {
+          const contributorId = post.author;
+          // Try to get from contributors map first
+          if (contributorId && contributorsMap[contributorId]) {
+            return contributorsMap[contributorId];
           }
           // Fallback to default
           return "49TH STREET";
@@ -98,7 +125,7 @@ export default function Hero() {
             post._embedded?.["wp:featuredmedia"]?.[0]?.source_url ||
             "/images/placeholder.jpg";
 
-          const author = getAuthorName(post);
+          const contributor = getContributorName(post);
           const category = getCategory(post);
           const cleanTitle = decodeHtmlEntities(post.title.rendered);
 
@@ -107,11 +134,13 @@ export default function Hero() {
             image: featuredImage,
             title: cleanTitle,
             subtitle: `/// ${category}`,
-            details: `${author} • ${category} • ${getTimeAgo(post.date)}`,
+            details: `${contributor} • ${category} • ${getTimeAgo(post.date)}`,
             slug: post.slug,
             category: category,
             content: post.content?.rendered || "",
             excerpt: post.excerpt?.rendered || "",
+            contributorId: post.author,
+            contributor: contributor,
           };
         });
 
@@ -122,19 +151,20 @@ export default function Hero() {
           .slice(0, 6);
 
         const formattedNews = sidebarPosts.map((post) => {
-          const author = getAuthorName(post);
+          const contributor = getContributorName(post);
           const category = getCategory(post);
           const cleanTitle = decodeHtmlEntities(post.title.rendered);
 
           return {
             id: post.id,
             title: cleanTitle,
-            author: author,
+            contributor: contributor,
             category: category,
             time: getTimeAgo(post.date),
             slug: post.slug,
             content: post.content?.rendered || "",
             excerpt: post.excerpt?.rendered || "",
+            contributorId: post.author,
           };
         });
 
@@ -150,7 +180,7 @@ export default function Hero() {
     };
 
     fetchPosts();
-  }, []);
+  }, [contributorsMap]); // Re-fetch posts when contributorsMap changes
 
   const handleArticleClick = (slug, postData) => {
     // Store the post data in sessionStorage for the article page to use
@@ -198,7 +228,7 @@ export default function Hero() {
   );
 
   // Show loading state only when actually loading and no data
-  if (loading && featuredPosts.length === 0) {
+  if ((loading && featuredPosts.length === 0) || Object.keys(contributorsMap).length === 0) {
     return (
       <div className="mx-0 sm:mx-6 md:mx-8 lg:mx-16 md:mt-1 flex gap-4 text-white">
         {/* Loading skeleton for slideshow */}
@@ -309,7 +339,7 @@ export default function Hero() {
               {item.title}
             </p>
             <p className="text-[10px] text-white/50 mt-[8px]">
-              {item.author?.toUpperCase()} • {item.category} • {item.time}
+              {item.contributor?.toUpperCase()} • {item.category} • {item.time}
             </p>
           </div>
         ))}

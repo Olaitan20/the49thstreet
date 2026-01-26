@@ -7,6 +7,7 @@ export default function ContentGrid() {
   const [loading, setLoading] = useState(false);
   const [articles, setArticles] = useState([]);
   const [isLoadingArticles, setIsLoadingArticles] = useState(true);
+  const [contributorsMap, setContributorsMap] = useState({});
 
   // Decode HTML entities
   const decodeHtmlEntities = (text) => {
@@ -35,9 +36,35 @@ export default function ContentGrid() {
     return `${diffInYears} YEAR${diffInYears > 1 ? "S" : ""} AGO`;
   };
 
-  // Fetch WordPress posts with author information
+  // Fetch contributors first
+  useEffect(() => {
+    const fetchContributors = async () => {
+      try {
+        const contributorsResponse = await fetch(
+          "https://staging.the49thstreet.com/wp-json/the49th/v1/contributors"
+        );
+
+        if (contributorsResponse.ok) {
+          const contributors = await contributorsResponse.json();
+          const contribMap = {};
+          contributors.forEach((contributor) => {
+            contribMap[contributor.id] = contributor.name;
+          });
+          setContributorsMap(contribMap);
+        }
+      } catch (error) {
+        console.error("Error fetching contributors:", error);
+      }
+    };
+
+    fetchContributors();
+  }, []);
+
+  // Fetch posts after contributors are loaded
   useEffect(() => {
     const fetchPosts = async () => {
+      if (Object.keys(contributorsMap).length === 0) return; // Wait for contributors
+
       try {
         setIsLoadingArticles(true);
 
@@ -50,7 +77,7 @@ export default function ContentGrid() {
 
         const posts = await response.json();
 
-        // Create an array to store articles with author info
+        // Create an array to store articles with contributor info
         const formattedArticles = [];
 
         // Process each post
@@ -65,43 +92,23 @@ export default function ContentGrid() {
           const category =
             categories.length > 0 ? categories[0].name.toUpperCase() : "NEWS";
 
-          // Get author name - try different ways to fetch it
-          let authorName = "49TH STREET"; // Default fallback
-          
-          // Method 1: Try from embedded author
-          if (post._embedded?.author?.[0]?.name) {
-            authorName = post._embedded.author[0].name;
-          } 
-          // Method 2: If author ID exists, fetch author separately
-          else if (post.author) {
-            try {
-              const authorResponse = await fetch(
-                `https://staging.the49thstreet.com/wp-json/wp/v2/users/${post.author}`
-              );
-              
-              if (authorResponse.ok) {
-                const authorData = await authorResponse.json();
-                authorName = authorData.name || authorData.slug || "49TH STREET";
-              }
-            } catch (error) {
-              console.warn("Could not fetch author:", error);
-            }
-          }
-          
-          // Method 3: Try from post data directly
-          else if (post.author_data?.name) {
-            authorName = post.author_data.name;
+          // Get contributor name from contributors map
+          const contributorId = post.author;
+          let contributorName = "49TH STREET"; // Default fallback
+
+          if (contributorId && contributorsMap[contributorId]) {
+            contributorName = contributorsMap[contributorId];
           }
 
           formattedArticles.push({
             id: post.id,
             image: featuredImage,
             title: decodeHtmlEntities(post.title.rendered),
-            author: authorName,
+            contributor: contributorName,
             category,
             time: getTimeAgo(post.date),
             slug: post.slug,
-            authorId: post.author, // Keep author ID for reference
+            contributorId: post.author,
           });
         }
 
@@ -115,7 +122,7 @@ export default function ContentGrid() {
     };
 
     fetchPosts();
-  }, []);
+  }, [contributorsMap]); // Re-fetch posts when contributorsMap changes
 
   // Load more button handler
   const handleLoadMore = () => {
@@ -126,7 +133,7 @@ export default function ContentGrid() {
   };
 
   // LOADING STATE
-  if (isLoadingArticles) {
+  if (isLoadingArticles || Object.keys(contributorsMap).length === 0) {
     return (
       <div className="bg-white md:bg-transparent">
         <section className="px-0 sm:px-6 md:px-8 lg:px-16 pt-[24px] md:pt-0 md:mt-20">
@@ -225,9 +232,9 @@ export default function ContentGrid() {
                 </p>
 
                 <div className="flex flex-row items-center gap-1 flex-wrap">
-                  {/* Author */}
+                  {/* Contributor */}
                   <span className="text-[12px] text-black/50">
-                    {article.author?.toUpperCase()}
+                    {article.contributor?.toUpperCase()}
                   </span>
                   
                   {/* Separator - only show if category exists */}
@@ -252,7 +259,7 @@ export default function ContentGrid() {
         </div>
 
         {/* LOAD MORE */}
-        <div className="bg-black py-4 flex justify-center md:mt-8">
+        <div className="bg-black py-4 flex justify-center md:mt-4">
           <button
             onClick={handleLoadMore}
             disabled={loading}

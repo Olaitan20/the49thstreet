@@ -13,6 +13,7 @@ export default function Page() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [musicCategoryId, setMusicCategoryId] = useState(null);
+  const [contributorsMap, setContributorsMap] = useState({});
 
   // Decode HTML entities
   const decodeHtmlEntities = (text) => {
@@ -35,6 +36,30 @@ export default function Page() {
     if (diffInHours < 24) return `${diffInHours} HOURS AGO`;
     return `${diffInDays} DAYS AGO`;
   };
+
+  // Fetch contributors first
+  useEffect(() => {
+    const fetchContributors = async () => {
+      try {
+        const contributorsResponse = await fetch(
+          "https://staging.the49thstreet.com/wp-json/the49th/v1/contributors"
+        );
+
+        if (contributorsResponse.ok) {
+          const contributors = await contributorsResponse.json();
+          const contribMap = {};
+          contributors.forEach((contributor) => {
+            contribMap[contributor.id] = contributor.name;
+          });
+          setContributorsMap(contribMap);
+        }
+      } catch (error) {
+        console.error("Error fetching contributors:", error);
+      }
+    };
+
+    fetchContributors();
+  }, []);
 
   // Get music category ID
   useEffect(() => {
@@ -59,6 +84,8 @@ export default function Page() {
 
   // Fetch articles (music category first, fallback to latest)
   const fetchArticles = async (pageNum = 1) => {
+    if (Object.keys(contributorsMap).length === 0) return; // Wait for contributors
+
     try {
       setLoading(true);
       let posts = [];
@@ -107,7 +134,14 @@ export default function Page() {
           featuredImage = localImages[index % localImages.length];
         }
 
-        const author = post._embedded?.author?.[0]?.name || "49TH STREET";
+        // Get contributor name from contributors map
+        const contributorId = post.author;
+        let contributorName = "49TH STREET"; // Default fallback
+        
+        if (contributorId && contributorsMap[contributorId]) {
+          contributorName = contributorsMap[contributorId];
+        }
+        
         const postCategories = post._embedded?.["wp:term"]?.[0] || [];
         const category =
           postCategories.length > 0
@@ -118,10 +152,11 @@ export default function Page() {
           id: post.id,
           image: featuredImage,
           title: decodeHtmlEntities(post.title.rendered),
-          author,
+          contributor: contributorName,
           category,
           time: getTimeAgo(post.date),
           slug: post.slug,
+          contributorId: post.author,
         };
       });
 
@@ -138,7 +173,11 @@ export default function Page() {
       console.error("Error fetching articles:", error);
       // Use static articles as fallback only on initial load
       if (pageNum === 1) {
-        setArticles(staticArticles);
+        setArticles(staticArticles.map(article => ({
+          ...article,
+          contributor: article.author, // Convert author to contributor
+          contributorId: null
+        })));
       }
     } finally {
       setLoading(false);
@@ -148,15 +187,16 @@ export default function Page() {
     }
   };
 
-  // Initial fetch
+  // Initial fetch - wait for both contributors and music category
   useEffect(() => {
-    // Give time to get music category ID
+    if (Object.keys(contributorsMap).length === 0) return;
+    
     const timer = setTimeout(() => {
       fetchArticles(1);
     }, 500);
     
     return () => clearTimeout(timer);
-  }, [musicCategoryId]);
+  }, [musicCategoryId, contributorsMap]);
 
   // Static fallback data
   const staticArticles = [
@@ -189,14 +229,19 @@ export default function Page() {
     },
   ];
 
-  // FIXED: Load more handler - actually loads more articles
+  // Load more handler
   const handleLoadMore = () => {
-    if (!loading && hasMore) {
+    if (!loading && hasMore && Object.keys(contributorsMap).length > 0) {
       fetchArticles(page + 1);
     }
   };
 
-  const displayArticles = articles.length > 0 ? articles : staticArticles;
+  const displayArticles = articles.length > 0 
+    ? articles 
+    : staticArticles.map(article => ({
+        ...article,
+        contributor: article.author // Convert author to contributor
+      }));
 
   const fadeUp = {
     hidden: { opacity: 0, y: 30 },
@@ -207,7 +252,8 @@ export default function Page() {
     }),
   };
 
-  if (isLoadingArticles) {
+  // Show loading while waiting for contributors
+  if ((isLoadingArticles && Object.keys(contributorsMap).length === 0) || isLoadingArticles) {
     return (
       <div className="relative min-h-screen bg-black text-white">
         <Headline />
@@ -290,7 +336,7 @@ export default function Page() {
                 {article.title}
               </p>
               <div className="flex flex-wrap items-center gap-1">
-                <span className="text-[12px] text-black/50 ">{article.author?.toUpperCase()}</span>
+                <span className="text-[12px] text-black/50 ">{article.contributor?.toUpperCase()}</span>
                 <span className="text-xs text-gray-400">•</span>
                 <span className="text-[12px] text-black/50 ">{article.category}</span>
                 <span className="text-xs text-gray-400">•</span>

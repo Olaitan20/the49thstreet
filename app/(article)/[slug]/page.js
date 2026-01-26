@@ -6,7 +6,6 @@ import Footer from "@/components/layout/Footer";
 import Headline from "@/components/layout/Headline";
 import ShareBar from "@/components/ui/ShareBar";
 import Tags from "@/components/ui/Tags";
-import Head from "next/head";
 
 export default function ArticlePage() {
   const params = useParams();
@@ -16,6 +15,31 @@ export default function ArticlePage() {
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [contributorsMap, setContributorsMap] = useState({});
+
+  // Fetch contributors first
+  useEffect(() => {
+    const fetchContributors = async () => {
+      try {
+        const contributorsResponse = await fetch(
+          "https://staging.the49thstreet.com/wp-json/the49th/v1/contributors"
+        );
+
+        if (contributorsResponse.ok) {
+          const contributors = await contributorsResponse.json();
+          const contribMap = {};
+          contributors.forEach((contributor) => {
+            contribMap[contributor.id] = contributor.name;
+          });
+          setContributorsMap(contribMap);
+        }
+      } catch (error) {
+        console.error("Error fetching contributors:", error);
+      }
+    };
+
+    fetchContributors();
+  }, []);
 
   // Decode HTML entities
   const decodeHtmlEntities = useCallback((text) => {
@@ -217,9 +241,11 @@ export default function ArticlePage() {
     };
   }, [article, router]);
 
-  // Fetch article data
+  // Fetch article data after contributors are loaded
   useEffect(() => {
     const fetchArticle = async () => {
+      if (Object.keys(contributorsMap).length === 0) return; // Wait for contributors
+
       try {
         setLoading(true);
         setError(null);
@@ -231,7 +257,13 @@ export default function ArticlePage() {
             try {
               const parsed = JSON.parse(stored);
               if (parsed && parsed.slug === slug) {
-                setArticle(parsed);
+                // Convert stored article to use contributor instead of author if needed
+                const formattedArticle = {
+                  ...parsed,
+                  contributor: parsed.author || parsed.contributor || "49TH STREET",
+                  contributorId: parsed.contributorId || null
+                };
+                setArticle(formattedArticle);
                 sessionStorage.removeItem("currentArticle");
                 setLoading(false);
                 return;
@@ -289,22 +321,13 @@ export default function ArticlePage() {
         const primaryCategory =
           categories.length > 0 ? categories[0].name.toUpperCase() : "NEWS";
 
-        // Fetch author data if not embedded
-        let authorName = post._embedded?.author?.[0]?.name;
-        if (!authorName && post.author) {
-          try {
-            const authorResponse = await fetch(
-              `https://staging.the49thstreet.com/wp-json/wp/v2/users/${post.author}`,
-            );
-            if (authorResponse.ok) {
-              const authorData = await authorResponse.json();
-              authorName = authorData.name;
-            }
-          } catch (authorError) {
-            console.error("Error fetching author:", authorError);
-          }
+        // Get contributor name from contributors map
+        const contributorId = post.author;
+        let contributorName = "49TH STREET"; // Default fallback
+        
+        if (contributorId && contributorsMap[contributorId]) {
+          contributorName = contributorsMap[contributorId];
         }
-        authorName = authorName || "49TH STREET";
 
         // Format article data
         const articleData = {
@@ -316,7 +339,8 @@ export default function ArticlePage() {
           image:
             post._embedded?.["wp:featuredmedia"]?.[0]?.source_url ||
             "/images/placeholder.jpg",
-          author: authorName,
+          contributor: contributorName,
+          contributorId: contributorId,
           date: new Date(post.date).toLocaleDateString("en-US", {
             year: "numeric",
             month: "long",
@@ -340,47 +364,48 @@ export default function ArticlePage() {
     if (slug) {
       fetchArticle();
     }
-  }, [slug, decodeHtmlEntities, getTimeAgo]);
+  }, [slug, decodeHtmlEntities, getTimeAgo, contributorsMap]);
 
   useEffect(() => {
-  if (article && typeof document !== "undefined") {
-    // Update Open Graph meta tags
-    const updateMetaTags = () => {
-      // Remove existing OG tags
-      const existingTags = document.querySelectorAll('meta[property^="og:"]');
-      existingTags.forEach(tag => tag.remove());
+    if (article && typeof document !== "undefined") {
+      // Update Open Graph meta tags
+      const updateMetaTags = () => {
+        // Remove existing OG tags
+        const existingTags = document.querySelectorAll('meta[property^="og:"]');
+        existingTags.forEach(tag => tag.remove());
 
-      // Create and add new OG tags
-      const ogTags = [
-        { property: "og:title", content: article.title },
-        { property: "og:description", content: stripHtml(article.excerpt || article.content).substring(0, 160) },
-        { property: "og:image", content: article.image },
-        { property: "og:url", content: typeof window !== "undefined" ? window.location.href : "" },
-        { property: "og:type", content: "article" },
-        { property: "twitter:card", content: "summary_large_image" },
-        { property: "twitter:title", content: article.title },
-        { property: "twitter:description", content: stripHtml(article.excerpt || article.content).substring(0, 160) },
-        { property: "twitter:image", content: article.image },
-      ];
+        // Create and add new OG tags
+        const ogTags = [
+          { property: "og:title", content: article.title },
+          { property: "og:description", content: stripHtml(article.excerpt || article.content).substring(0, 160) },
+          { property: "og:image", content: article.image },
+          { property: "og:url", content: typeof window !== "undefined" ? window.location.href : "" },
+          { property: "og:type", content: "article" },
+          { property: "twitter:card", content: "summary_large_image" },
+          { property: "twitter:title", content: article.title },
+          { property: "twitter:description", content: stripHtml(article.excerpt || article.content).substring(0, 160) },
+          { property: "twitter:image", content: article.image },
+        ];
 
-      ogTags.forEach(({ property, content }) => {
-        if (content) {
-          const meta = document.createElement("meta");
-          meta.setAttribute("property", property);
-          meta.setAttribute("content", content);
-          document.head.appendChild(meta);
-        }
-      });
+        ogTags.forEach(({ property, content }) => {
+          if (content) {
+            const meta = document.createElement("meta");
+            meta.setAttribute("property", property);
+            meta.setAttribute("content", content);
+            document.head.appendChild(meta);
+          }
+        });
 
-      // Also set document title
-      document.title = `${article.title} | 49th Street`;
-    };
+        // Also set document title
+        document.title = `${article.title} | 49th Street`;
+      };
 
-    updateMetaTags();
-  }
-}, [article, stripHtml]);
-  // LOADING UI
-  if (loading) {
+      updateMetaTags();
+    }
+  }, [article, stripHtml]);
+
+  // LOADING UI - show while waiting for contributors or article
+  if (loading || Object.keys(contributorsMap).length === 0) {
     return (
       <div className="min-h-screen bg-black text-white overflow-x-hidden">
         <div className="px-0">
@@ -467,7 +492,7 @@ export default function ArticlePage() {
               </h1>
 
               <p className="text-[12px] uppercase md:text-[12px] text-white/60 mb-6">
-                {article.author?.toUpperCase()} • {article.date} •{" "}
+                {article.contributor?.toUpperCase()} • {article.date} •{" "}
                 {article.time}
               </p>
             </div>

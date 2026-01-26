@@ -13,6 +13,7 @@ export default function Page() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [fashionCategoryId, setFashionCategoryId] = useState(null);
+  const [contributorsMap, setContributorsMap] = useState({});
 
   // Function to decode HTML entities
   const decodeHtmlEntities = (text) => {
@@ -47,6 +48,30 @@ export default function Page() {
     }
   };
 
+  // Fetch contributors first
+  useEffect(() => {
+    const fetchContributors = async () => {
+      try {
+        const contributorsResponse = await fetch(
+          "https://staging.the49thstreet.com/wp-json/the49th/v1/contributors"
+        );
+
+        if (contributorsResponse.ok) {
+          const contributors = await contributorsResponse.json();
+          const contribMap = {};
+          contributors.forEach((contributor) => {
+            contribMap[contributor.id] = contributor.name;
+          });
+          setContributorsMap(contribMap);
+        }
+      } catch (error) {
+        console.error("Error fetching contributors:", error);
+      }
+    };
+
+    fetchContributors();
+  }, []);
+
   // Get fashion category ID
   useEffect(() => {
     const getFashionCategory = async () => {
@@ -76,6 +101,8 @@ export default function Page() {
 
   // Fetch articles function with pagination
   const fetchArticles = async (pageNum = 1) => {
+    if (Object.keys(contributorsMap).length === 0) return; // Wait for contributors
+
     try {
       setLoading(true);
 
@@ -152,7 +179,14 @@ export default function Page() {
           featuredImage = fashionImages[index % fashionImages.length];
         }
 
-        const author = post._embedded?.author?.[0]?.name || "FASHION DESK";
+        // Get contributor name from contributors map
+        const contributorId = post.author;
+        let contributorName = "FASHION DESK"; // Default fallback
+        
+        if (contributorId && contributorsMap[contributorId]) {
+          contributorName = contributorsMap[contributorId];
+        }
+        
         const postCategories = post._embedded?.["wp:term"]?.[0] || [];
         const category =
           postCategories.length > 0
@@ -166,10 +200,11 @@ export default function Page() {
           id: post.id,
           image: featuredImage,
           title: cleanTitle,
-          author: author,
+          contributor: contributorName,
           category: category,
           time: getTimeAgo(post.date),
           slug: post.slug,
+          contributorId: post.author,
         };
       });
 
@@ -186,7 +221,11 @@ export default function Page() {
       // Use static data as fallback only on initial load
       if (pageNum === 1) {
         console.log("🔄 Using static fashion data");
-        setArticles(staticArticles);
+        setArticles(staticArticles.map(article => ({
+          ...article,
+          contributor: article.author, // Convert author to contributor
+          contributorId: null
+        })));
         setHasMore(false); // No more pages for static data
       }
     } finally {
@@ -197,19 +236,21 @@ export default function Page() {
     }
   };
 
-  // Initial fetch
+  // Initial fetch - wait for both contributors and fashion category
   useEffect(() => {
+    if (Object.keys(contributorsMap).length === 0) return;
+    
     // Give time to get fashion category ID
     const timer = setTimeout(() => {
       fetchArticles(1);
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [fashionCategoryId]);
+  }, [fashionCategoryId, contributorsMap]);
 
-  // FIXED: Load more handler - actually loads more articles
+  // Load more handler
   const handleLoadMore = () => {
-    if (!loading && hasMore) {
+    if (!loading && hasMore && Object.keys(contributorsMap).length > 0) {
       fetchArticles(page + 1);
     }
   };
@@ -245,7 +286,12 @@ export default function Page() {
     },
   ];
 
-  const displayArticles = articles.length > 0 ? articles : staticArticles;
+  const displayArticles = articles.length > 0 
+    ? articles 
+    : staticArticles.map(article => ({
+        ...article,
+        contributor: article.author // Convert author to contributor
+      }));
 
   const fadeUp = {
     hidden: { opacity: 0, y: 30 },
@@ -260,8 +306,8 @@ export default function Page() {
     }),
   };
 
-  // Loading state
-  if (isLoadingArticles) {
+  // Loading state - show while waiting for contributors or articles
+  if ((isLoadingArticles && Object.keys(contributorsMap).length === 0) || isLoadingArticles) {
     return (
       <div className="relative min-h-screen bg-black text-white">
         <Headline />
@@ -356,12 +402,12 @@ export default function Page() {
             </div>
 
             <div className="p-4 md:p-6">
-              <p className="text-sm md:text-[16px] font-bold text-black mb-3 leading-tight line-clamp-2">
+              <p className="text-sm md:text-[16px] font-bold text-black mb-3 truncate leading-tight line-clamp-2">
                 {article.title}
               </p>
               <div className="flex flex-wrap items-center gap-1">
                 <span className="text-[12px] text-black/50 ">
-                  {article.author?.toUpperCase()}
+                  {article.contributor?.toUpperCase()}
                 </span>
                 <span className="text-xs text-gray-400">•</span>
                 <span className="text-[12px] text-black/50 ">

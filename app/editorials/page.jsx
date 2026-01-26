@@ -31,6 +31,7 @@ export default function Page() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [editorialCategoryId, setEditorialCategoryId] = useState(null);
+  const [contributorsMap, setContributorsMap] = useState({});
 
   // Decode HTML entities
   const decodeHtmlEntities = (text) => {
@@ -67,10 +68,40 @@ export default function Page() {
     );
   };
 
-  // Helper to get author name
-  const getAuthorName = (post) => {
-    return post._embedded?.author?.[0]?.name || "EDITORIAL TEAM";
+  // Helper to get contributor name
+  const getContributorName = (post) => {
+    const contributorId = post.author;
+    // Try to get from contributors map first
+    if (contributorId && contributorsMap[contributorId]) {
+      return contributorsMap[contributorId];
+    }
+    // Fallback to default
+    return "EDITORIAL TEAM";
   };
+
+  // Fetch contributors first
+  useEffect(() => {
+    const fetchContributors = async () => {
+      try {
+        const contributorsResponse = await fetch(
+          "https://staging.the49thstreet.com/wp-json/the49th/v1/contributors"
+        );
+
+        if (contributorsResponse.ok) {
+          const contributors = await contributorsResponse.json();
+          const contribMap = {};
+          contributors.forEach((contributor) => {
+            contribMap[contributor.id] = contributor.name;
+          });
+          setContributorsMap(contribMap);
+        }
+      } catch (error) {
+        console.error("Error fetching contributors:", error);
+      }
+    };
+
+    fetchContributors();
+  }, []);
 
   // Fetch editorial category ID by slug
   const fetchEditorialCategoryId = async () => {
@@ -96,6 +127,8 @@ export default function Page() {
 
   // Fetch articles function
   const fetchArticles = async (pageNum = 1) => {
+    if (Object.keys(contributorsMap).length === 0) return; // Wait for contributors
+
     try {
       setLoading(true);
       setError(null);
@@ -125,10 +158,11 @@ export default function Page() {
           id: post.id,
           image,
           title: decodeHtmlEntities(post.title.rendered),
-          author: getAuthorName(post),
+          contributor: getContributorName(post),
           category: "Editorials",
           time: getTimeAgo(post.date),
           slug: post.slug,
+          contributorId: post.author,
         };
       });
 
@@ -146,14 +180,18 @@ export default function Page() {
     }
   };
 
-  // Initial fetch
+  // Fetch articles when contributors are loaded
   useEffect(() => {
-    fetchArticles(1);
-  }, []);
+    if (Object.keys(contributorsMap).length > 0) {
+      fetchArticles(1);
+    }
+  }, [contributorsMap]);
 
   // Load more handler
   const handleLoadMore = () => {
-    if (!loading && hasMore) fetchArticles(page + 1);
+    if (!loading && hasMore && Object.keys(contributorsMap).length > 0) {
+      fetchArticles(page + 1);
+    }
   };
 
   // Animation variants
@@ -165,6 +203,20 @@ export default function Page() {
       transition: { delay: i * 0.1, duration: 0.6, ease: "easeOut" },
     }),
   };
+
+  // Show loading while waiting for contributors
+  if (apiLoading && Object.keys(contributorsMap).length === 0) {
+    return (
+      <div className="relative min-h-screen bg-black text-white">
+        <Headline />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mx-0 sm:mx-6 md:mx-8 lg:mx-16">
+          {Array.from({ length: 9 }).map((_, i) => (
+            <ArticleSkeleton key={i} index={i} />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen bg-black text-white">
@@ -218,7 +270,7 @@ export default function Page() {
                   </p>
                   <div className="flex sm:flex-row sm:items-center gap-1 sm:gap-0">
                     <span className="text-[12px] text-black/50 font-medium">
-                      {article.author?.toUpperCase()}
+                      {article.contributor?.toUpperCase()}
                     </span>
                     <span className="hidden sm:inline text-xs text-gray-400 mx-2">
                       •
