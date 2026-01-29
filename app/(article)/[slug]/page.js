@@ -518,8 +518,8 @@ export default function ArticlePage() {
               __html: processImagesInContent(article.content),
             }}
           />
-          <ShareBar article={article} />
           <Tags tags={article.tags} currentArticleId={article.id} category={article.category} />
+          <ShareBar article={article} />
         </div>
 
         {/* RELATED CONTENT */}

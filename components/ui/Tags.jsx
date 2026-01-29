@@ -114,8 +114,8 @@ export default function Tags({ tags, currentArticleId, category }) {
             onClick={() => handleTagClick(tag)}
             className={`text-[10px] md:text-[11px] uppercase px-3 py-1 rounded-full transition-colors border ${
               selectedTag && selectedTag.id === tag.id
-                ? "bg-orange-500 text-black border-orange-500"
-                : "bg-transparent text-orange-400 border-orange-400 hover:bg-orange-400 hover:text-black"
+                ? "bg-white text-black border-white"
+                : "bg-transparent text-white border-white hover:bg-white hover:text-black"
             }`}
           >
             #{tag.name}
