@@ -141,10 +141,40 @@ export default function ArticleClient() {
         },
       );
 
-      return processedHtml;
+      const container = document.createElement("div");
+      container.innerHTML = processedHtml;
+      const isOrange = (style) => {
+        const s = (style || "").toLowerCase();
+        return s.includes("#f26509") || s.includes("rgb(242, 101, 9)") || s.includes("orange");
+      };
+      const coloredEls = container.querySelectorAll("[style*=\"color\"]");
+      coloredEls.forEach((el) => {
+        const style = el.getAttribute("style");
+        if (isOrange(style)) {
+          el.classList.add("question-highlight");
+        }
+      });
+      return container.innerHTML;
     },
     [transformWordPressUrls],
   );
+
+  const extractHighlightedQuestions = useCallback((html) => {
+    if (!html) return [];
+    const container = document.createElement("div");
+    container.innerHTML = html;
+    const colored = Array.from(container.querySelectorAll("[style*=\"color\"]"));
+    const isOrange = (style) => {
+      const s = (style || "").toLowerCase();
+      return s.includes("#f26509") || s.includes("rgb(242, 101, 9)") || s.includes("orange");
+    };
+    const texts = colored
+      .filter((el) => isOrange(el.getAttribute("style")))
+      .map((el) => el.textContent?.trim())
+      .filter(Boolean);
+    const unique = Array.from(new Set(texts));
+    return unique.filter((t) => t.includes("?"));
+  }, []);
 
   // "Time ago" formatter
   const getTimeAgo = useCallback((dateString) => {
@@ -263,7 +293,8 @@ export default function ArticleClient() {
                   contributor: parsed.author || parsed.contributor || "49TH STREET",
                   contributorId: parsed.contributorId || null
                 };
-                setArticle(formattedArticle);
+                const questions = extractHighlightedQuestions(formattedArticle.content);
+                setArticle({ ...formattedArticle, questions });
                 sessionStorage.removeItem("currentArticle");
                 setLoading(false);
                 return;
@@ -351,7 +382,8 @@ export default function ArticleClient() {
           tags: tags,
         };
 
-        setArticle(articleData);
+        const questions = extractHighlightedQuestions(articleData.content);
+        setArticle({ ...articleData, questions });
       } catch (err) {
         console.error("Error fetching article:", err);
         setError(err.message || "Failed to load article");
@@ -463,6 +495,16 @@ export default function ArticleClient() {
 
         {/* CONTENT WITH STYLED IMAGES AND TRANSFORMED LINKS */}
         <div className="mx-2 md:mx-auto max-w-4xl mb-8">
+          {Array.isArray(article.questions) && article.questions.length > 0 && (
+            <div className="mb-6 p-4 border border-white/10 rounded bg-black/40">
+              <p className="uppercase text-[12px] text-[#f26509] mb-2">/// Questions</p>
+              <ul className="space-y-2">
+                {article.questions.map((q, i) => (
+                  <li key={i} className="text-[#f26509] text-[14px]">{q}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div
             id="article"
             className="text-[14px] md:text-[16px] text-justify leading-relaxed font-[200] prose prose-invert max-w-none
@@ -654,6 +696,9 @@ export default function ArticleClient() {
   /* Optional: If you want a background for images with aspect ratio different from container */
   .article-content-image {
     background-color: #1a1a1a;
+  }
+  #article .question-highlight {
+    color: #f26509 !important;
   }
 `}</style>
     </div>

@@ -18,6 +18,13 @@ const navItems = [
   { id: "shop", label: "Shop", icon: "/icons/shop.svg", href: "/shop" },
 ];
 
+const decodeHtmlEntities = (text) => {
+  if (typeof text !== "string" || !text) return "";
+  const textarea = document.createElement("textarea");
+  textarea.innerHTML = text;
+  return textarea.value;
+};
+
 // ---------------- SEARCH ----------------
 function SearchBar({ onClose }) {
   const [query, setQuery] = useState("");
@@ -46,7 +53,7 @@ function SearchBar({ onClose }) {
         setResults(
           posts.map((post) => ({
             id: post.id,
-            title: post.title.rendered.replace(/<[^>]*>/g, ""),
+            title: decodeHtmlEntities(post.title.rendered.replace(/<[^>]*>/g, "")),
             slug: post.slug,
             image:
               post._embedded?.["wp:featuredmedia"]?.[0]?.source_url ||

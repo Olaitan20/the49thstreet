@@ -315,7 +315,15 @@ export default function Hero() {
                 <p className="text-[12px]  uppercase tracking-widest text-white/50 mb-[8px]">
                   {featuredPosts[index].subtitle}
                 </p>
-                <p className="text-[16px] md:text-[16px] truncate font-semibold">
+                <p
+                  onClick={() =>
+                    handleArticleClick(
+                      featuredPosts[index].slug,
+                      featuredPosts[index],
+                    )
+                  }
+                  className="text-[16px] md:text-[16px] truncate font-semibold cursor-pointer hover:text-[#F26509] transition-colors"
+                >
                   {featuredPosts[index].title}
                 </p>
                 <p className="text-[12px]  mt-[8px] text-white/50">
