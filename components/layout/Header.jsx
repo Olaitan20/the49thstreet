@@ -22,7 +22,13 @@ const decodeHtmlEntities = (text) => {
   if (typeof text !== "string" || !text) return "";
   const textarea = document.createElement("textarea");
   textarea.innerHTML = text;
-  return textarea.value;
+  let decoded = textarea.value;
+  decoded = decoded.replace(/&#(\\d+);/g, (_, dec) => String.fromCharCode(dec));
+  decoded = decoded.replace(/&#x([0-9a-fA-F]+);/g, (_, hex) =>
+    String.fromCharCode(parseInt(hex, 16)),
+  );
+  decoded = decoded.replace(/\\u00A0/g, " ");
+  return decoded;
 };
 
 // ---------------- SEARCH ----------------
