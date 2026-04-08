@@ -8,7 +8,6 @@ export default function OrangeMagPage() {
   const [magazines, setMagazines] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // PDF modal state
   const [pdfUrl, setPdfUrl] = useState(null);
   const [pdfTitle, setPdfTitle] = useState("");
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -27,7 +26,6 @@ export default function OrangeMagPage() {
   const PLACEHOLDER =
     "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='480' viewBox='0 0 400 480'%3E%3Crect width='400' height='480' fill='%23111'/%3E%3Ctext x='50%25' y='50%25' fill='%23333' font-size='14' text-anchor='middle' dominant-baseline='middle' font-family='sans-serif'%3ENo Cover%3C/text%3E%3C/svg%3E";
 
-  // Fetch magazine posts
   useEffect(() => {
     const fetchMagazines = async () => {
       try {
@@ -38,8 +36,7 @@ export default function OrangeMagPage() {
         if (!response.ok) throw new Error("Failed to fetch magazines");
         const magazinePosts = await response.json();
 
-        const formattedMagazines = magazinePosts.map((magazine) => {
-          // Safely extract featured image
+        const formattedMagazines = magazinePosts.map((magazine, index) => {
           const featuredMedia = magazine._embedded?.["wp:featuredmedia"]?.[0];
           let featuredImage = PLACEHOLDER;
 
@@ -64,7 +61,7 @@ export default function OrangeMagPage() {
             return `${diffInDays} days ago`;
           };
 
-          const issueNumber = String(magazine.id).padStart(2, "0");
+          const issueNumber = String(index + 1).padStart(2, "0");
 
           return {
             id: magazine.id,
@@ -75,18 +72,31 @@ export default function OrangeMagPage() {
           };
         });
 
-        console.log(
-          "Magazine images:",
-          formattedMagazines.map((m) => ({ title: m.title, src: m.src }))
-        );
-
         setMagazines(formattedMagazines);
       } catch (error) {
         console.error("Error fetching magazines:", error);
         setMagazines([
-          { id: 1, src: PLACEHOLDER, title: "Made Kuti", issue: "#ISSUE 05 · 56 mins ago", slug: "made-kuti-interview" },
-          { id: 2, src: PLACEHOLDER, title: "Tems", issue: "#ISSUE 06 · 2 hrs ago", slug: "tems-feature" },
-          { id: 3, src: PLACEHOLDER, title: "Ayra Starr", issue: "#ISSUE 07 · 1 day ago", slug: "ayra-starr-profile" },
+          {
+            id: 1,
+            src: PLACEHOLDER,
+            title: "Made Kuti",
+            issue: "#ISSUE 01 · 56 mins ago",
+            slug: "made-kuti-interview",
+          },
+          {
+            id: 2,
+            src: PLACEHOLDER,
+            title: "Tems",
+            issue: "#ISSUE 02 · 2 hrs ago",
+            slug: "tems-feature",
+          },
+          {
+            id: 3,
+            src: PLACEHOLDER,
+            title: "Ayra Starr",
+            issue: "#ISSUE 03 · 1 day ago",
+            slug: "ayra-starr-profile",
+          },
         ]);
       } finally {
         setIsLoading(false);
@@ -96,7 +106,6 @@ export default function OrangeMagPage() {
     fetchMagazines();
   }, []);
 
-  // Fetch PDF attachment and open modal
   const handleMagazineClick = useCallback(async (magazine) => {
     setPdfUrl(null);
     setPdfError(null);
@@ -110,8 +119,6 @@ export default function OrangeMagPage() {
       );
       if (!res.ok) throw new Error("Could not load attachments");
       const attachments = await res.json();
-
-      console.log("Attachments for", magazine.title, attachments);
 
       const pdf = attachments.find(
         (a) =>
@@ -173,15 +180,15 @@ export default function OrangeMagPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
+            style={{ background: "rgba(0,0,0,0.97)" }}
             className="fixed inset-0 z-50 flex flex-col"
-            style={{ background: "rgba(0,0,0,0.96)" }}
           >
             {/* Modal Header */}
             <motion.div
               initial={{ y: -20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.05, duration: 0.3 }}
-              className="flex items-center justify-between px-4 sm:px-8 py-4 border-b border-white/10 flex-shrink-0"
+              className="flex-shrink-0 flex items-center justify-between px-4 sm:px-8 py-4 border-b border-white/10"
             >
               <div>
                 <p className="text-[10px] uppercase tracking-widest text-white/40 mb-0.5">
@@ -202,7 +209,16 @@ export default function OrangeMagPage() {
                     onClick={handleDownload}
                     className="flex items-center gap-2 bg-[#F26509] hover:bg-[#d95500] text-white text-[11px] uppercase font-bold tracking-widest px-4 py-2 rounded-full transition-colors duration-200"
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                       <polyline points="7 10 12 15 17 10" />
                       <line x1="12" y1="15" x2="12" y2="3" />
@@ -213,10 +229,19 @@ export default function OrangeMagPage() {
 
                 <button
                   onClick={closeModal}
-                  className="flex items-center justify-center w-9 h-9 rounded-full border border-white/20 hover:border-white/50 hover:bg-white/10 transition-all duration-200 flex-shrink-0"
                   aria-label="Close preview"
+                  className="flex items-center justify-center w-9 h-9 rounded-full border border-white/20 hover:border-white/50 hover:bg-white/10 transition-all duration-200 flex-shrink-0"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <line x1="18" y1="6" x2="6" y2="18" />
                     <line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
@@ -225,7 +250,7 @@ export default function OrangeMagPage() {
             </motion.div>
 
             {/* Modal Body */}
-            <div className="flex-1 overflow-hidden relative">
+            <div className="flex-1 min-h-0 relative">
               {pdfLoading && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
                   <div className="relative w-12 h-12">
@@ -240,7 +265,16 @@ export default function OrangeMagPage() {
 
               {!pdfLoading && pdfError && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#F26509" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    width="32"
+                    height="32"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#F26509"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <circle cx="12" cy="12" r="10" />
                     <line x1="12" y1="8" x2="12" y2="12" />
                     <line x1="12" y1="16" x2="12.01" y2="16" />
@@ -255,10 +289,11 @@ export default function OrangeMagPage() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.4 }}
-                  src={pdfUrl}
-                  className="w-full h-full border-0"
+                  src={`${pdfUrl}#toolbar=1&view=FitH&scrollbar=1`}
                   title={pdfTitle}
                   allow="fullscreen"
+                  className="w-full border-0"
+                  style={{ height: "100%", display: "block" }}
                 />
               )}
             </div>
@@ -275,7 +310,16 @@ export default function OrangeMagPage() {
                   onClick={handleDownload}
                   className="w-full flex items-center justify-center gap-2 bg-[#F26509] text-white text-[12px] uppercase font-bold tracking-widest py-3 rounded-full"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                     <polyline points="7 10 12 15 17 10" />
                     <line x1="12" y1="15" x2="12" y2="3" />
@@ -315,7 +359,6 @@ export default function OrangeMagPage() {
         </motion.div>
 
         {isLoading ? (
-          // Loading skeleton
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-0">
             {[1, 2, 3].map((item) => (
               <motion.div
@@ -343,7 +386,6 @@ export default function OrangeMagPage() {
             </div>
           </div>
         ) : (
-          // Magazine Grid
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-0">
             {magazines.map((magazine, index) => (
               <motion.div
@@ -370,7 +412,16 @@ export default function OrangeMagPage() {
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all duration-300 flex items-center justify-center">
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center gap-2">
                       <div className="w-12 h-12 rounded-full bg-[#F26509] flex items-center justify-center shadow-lg">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="white"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
                           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                           <circle cx="12" cy="12" r="3" />
                         </svg>
