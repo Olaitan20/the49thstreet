@@ -25,16 +25,13 @@ const AboutPage = () => {
           <div className="md:grid mb-6 md:grid-cols-2 gap-12 items-center">
             <div className="text-left">
               <p className="text-[12px] leading-relaxed mb-6">
-                We are the street to everything African creativity. Our brand is African, by Africans and for Africans. 
-                Here we bring to you, the best of African music, fashion, art and culture.
+              The 49th Street is a leading professional music publication from Lagos, Nigeria, dedicated to documenting, amplifying, and covering African music. From spotlight features and interviews to in-depth stories on acts shaping the sound across the continent and globally.
               </p>
             </div>
             
             <div className="text-left">
               <p className="text-[12px] leading-relaxed mb-2">
-                49th Street (formerly known as 7th Street) was established in September 2019 to be an all-round Media, 
-                Entertainment and Advertising agency committed to spotlighting and documenting underground African 
-                creatives and the achievements of Africans all around the world.
+               Established in September 2019, it is known for its extensive coverage of African music across its music vertical, YouTube, weekly curated playlists, and rich editorial content, offering a diverse range of content segments that continue to engage its community of music enthusiasts.
               </p>
             </div>
           </div>
