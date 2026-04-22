@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { wpFetch } from "@/lib/wordpress";
 
 // Function to calculate time ago
 const getTimeAgo = (dateString) => {
@@ -53,12 +54,8 @@ export default function Hero() {
   useEffect(() => {
     const fetchContributors = async () => {
       try {
-        const contributorsResponse = await fetch(
-          "https://staging.the49thstreet.com/wp-json/the49th/v1/contributors"
-        );
-
-        if (contributorsResponse.ok) {
-          const contributors = await contributorsResponse.json();
+        const contributors = await wpFetch("/the49th/v1/contributors");
+        if (contributors) {
           const contribMap = {};
           contributors.forEach((contributor) => {
             contribMap[contributor.id] = contributor.name;
@@ -81,26 +78,12 @@ export default function Hero() {
       try {
         setLoading(true);
 
-        // Use Promise.all to fetch both endpoints simultaneously
-        const [slideshowResponse, sidebarResponse] = await Promise.all([
-          fetch(
-            "https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&per_page=12&orderby=date&order=desc",
-          ),
-          fetch(
-            "https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&per_page=12&orderby=date&order=desc",
-          ),
-        ]);
-
-        // Check if responses are ok
-        if (!slideshowResponse.ok || !sidebarResponse.ok) {
-          throw new Error("API fetch failed");
-        }
-
-        // Parse responses
-        const [slideshowData, sidebarData] = await Promise.all([
-          slideshowResponse.json(),
-          sidebarResponse.json(),
-        ]);
+        // Fetch posts once and reuse for both slideshow and sidebar
+        const allPosts = await wpFetch(
+          "/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&per_page=12&orderby=date&order=desc",
+        );
+        const slideshowData = allPosts;
+        const sidebarData = allPosts;
 
         // Helper function to extract contributor name safely
         const getContributorName = (post) => {

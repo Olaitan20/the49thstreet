@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Headline from "@/components/layout/Headline";
 import Footer from "@/components/layout/Footer";
+import { wpFetch } from "@/lib/wordpress";
 
 export default function Page() {
   const router = useRouter();
@@ -41,18 +42,12 @@ export default function Page() {
   useEffect(() => {
     const fetchContributors = async () => {
       try {
-        const contributorsResponse = await fetch(
-          "https://staging.the49thstreet.com/wp-json/the49th/v1/contributors"
-        );
-
-        if (contributorsResponse.ok) {
-          const contributors = await contributorsResponse.json();
-          const contribMap = {};
-          contributors.forEach((contributor) => {
-            contribMap[contributor.id] = contributor.name;
-          });
-          setContributorsMap(contribMap);
-        }
+        const contributors = await wpFetch("/the49th/v1/contributors");
+        const contribMap = {};
+        contributors.forEach((contributor) => {
+          contribMap[contributor.id] = contributor.name;
+        });
+        setContributorsMap(contribMap);
       } catch (error) {
         console.error("Error fetching contributors:", error);
       }
@@ -65,14 +60,9 @@ export default function Page() {
   useEffect(() => {
     const getMusicCategory = async () => {
       try {
-        const categoriesResponse = await fetch(
-          "https://staging.the49thstreet.com/wp-json/wp/v2/categories?slug=music"
-        );
-        const categories = await categoriesResponse.json();
-        
+        const categories = await wpFetch("/wp/v2/categories?slug=music");
         if (categories.length) {
           setMusicCategoryId(categories[0].id);
-          console.log('Music category ID:', categories[0].id);
         }
       } catch (error) {
         console.error("Error fetching music category:", error);
@@ -84,64 +74,49 @@ export default function Page() {
 
   // Fetch articles (music category first, fallback to latest)
   const fetchArticles = async (pageNum = 1) => {
-    if (Object.keys(contributorsMap).length === 0) return; // Wait for contributors
+    if (Object.keys(contributorsMap).length === 0) return;
 
     try {
       setLoading(true);
       let posts = [];
+      let totalPages = 1;
 
       // Try music category if we have the ID
       if (musicCategoryId) {
-        const postsResponse = await fetch(
-          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&categories=${musicCategoryId}&per_page=9&page=${pageNum}&orderby=date&order=desc`
-        );
-        
+        const url = `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&categories=${musicCategoryId}&per_page=9&page=${pageNum}&orderby=date&order=desc`;
+        const postsResponse = await fetch(url);
+
         if (postsResponse.ok) {
           posts = await postsResponse.json();
-          
-          // Get pagination info from headers
-          const totalPages = parseInt(postsResponse.headers.get('X-WP-TotalPages') || '1');
-          setHasMore(pageNum < totalPages);
+          totalPages = parseInt(postsResponse.headers.get('X-WP-TotalPages') || '1');
         }
       }
 
       // Fallback to latest if no music posts
       if (posts.length === 0) {
-        const latestResponse = await fetch(
-          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&per_page=9&page=${pageNum}&orderby=date&order=desc`
-        );
-        
+        const url = `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed&per_page=9&page=${pageNum}&orderby=date&order=desc`;
+        const latestResponse = await fetch(url);
+
         if (latestResponse.ok) {
           posts = await latestResponse.json();
-          
-          // Get pagination info from headers
-          const totalPages = parseInt(latestResponse.headers.get('X-WP-TotalPages') || '1');
-          setHasMore(pageNum < totalPages);
+          totalPages = parseInt(latestResponse.headers.get('X-WP-TotalPages') || '1');
         }
       }
 
-      const formattedArticles = posts.map((post, index) => {
-        let featuredImage = "/images/placeholder.jpg";
-        const featuredMedia = post._embedded?.["wp:featuredmedia"];
-        if (featuredMedia && featuredMedia[0]?.source_url) {
-          featuredImage = featuredMedia[0].source_url;
-        } else {
-          const localImages = [
-            "/images/victony.png",
-            "/images/wizkid.png",
-            "/images/minz.png",
-          ];
-          featuredImage = localImages[index % localImages.length];
-        }
+      setHasMore(pageNum < totalPages);
 
-        // Get contributor name from contributors map
+      const formattedArticles = posts.map((post) => {
+        const featuredImage =
+          post._embedded?.["wp:featuredmedia"]?.[0]?.source_url ||
+          "/images/placeholder.jpg";
+
         const contributorId = post.author;
-        let contributorName = "49TH STREET"; // Default fallback
-        
+        let contributorName = "49TH STREET";
+
         if (contributorId && contributorsMap[contributorId]) {
           contributorName = contributorsMap[contributorId];
         }
-        
+
         const postCategories = post._embedded?.["wp:term"]?.[0] || [];
         const category =
           postCategories.length > 0
@@ -160,24 +135,17 @@ export default function Page() {
         };
       });
 
-      // Add new articles to existing list or set initial articles
       if (pageNum === 1) {
         setArticles(formattedArticles);
       } else {
         setArticles(prev => [...prev, ...formattedArticles]);
       }
-      
+
       setPage(pageNum);
-      
     } catch (error) {
       console.error("Error fetching articles:", error);
-      // Use static articles as fallback only on initial load
       if (pageNum === 1) {
-        setArticles(staticArticles.map(article => ({
-          ...article,
-          contributor: article.author, // Convert author to contributor
-          contributorId: null
-        })));
+        setArticles([]);
       }
     } finally {
       setLoading(false);
@@ -190,44 +158,13 @@ export default function Page() {
   // Initial fetch - wait for both contributors and music category
   useEffect(() => {
     if (Object.keys(contributorsMap).length === 0) return;
-    
+
     const timer = setTimeout(() => {
       fetchArticles(1);
     }, 500);
-    
+
     return () => clearTimeout(timer);
   }, [musicCategoryId, contributorsMap]);
-
-  // Static fallback data
-  const staticArticles = [
-    {
-      id: 1,
-      image: "/images/victony.png",
-      title: "Victony Scores New Certification With Efforts On Victony's 'Stubborn'",
-      author: "IAM NOONE",
-      category: "MUSIC",
-      time: "5 MINS AGO",
-      slug: "victony-certification",
-    },
-    {
-      id: 2,
-      image: "/images/wizkid.png",
-      title: "Wizkid Makes Surprise Nativeland Appearance",
-      author: "49TH STREET",
-      category: "MUSIC",
-      time: "20 MINS AGO",
-      slug: "wizkid-nativeland",
-    },
-    {
-      id: 3,
-      image: "/images/minz.png",
-      title: "New Music Collaboration Breaks Records",
-      author: "TEMPLE EGEMESI",
-      category: "MUSIC",
-      time: "23 MINS AGO",
-      slug: "music-collaboration",
-    },
-  ];
 
   // Load more handler
   const handleLoadMore = () => {
@@ -235,13 +172,6 @@ export default function Page() {
       fetchArticles(page + 1);
     }
   };
-
-  const displayArticles = articles.length > 0 
-    ? articles 
-    : staticArticles.map(article => ({
-        ...article,
-        contributor: article.author // Convert author to contributor
-      }));
 
   const fadeUp = {
     hidden: { opacity: 0, y: 30 },
@@ -287,6 +217,36 @@ export default function Page() {
     );
   }
 
+  // Empty state
+  if (articles.length === 0) {
+    return (
+      <div className="relative min-h-screen bg-black text-white">
+        <Headline />
+        <motion.div
+          variants={fadeUp}
+          initial="visible"
+          animate="visible"
+          custom={0.1}
+          className="mx-2 sm:mx-6 md:mx-8 lg:mx-16 py-4"
+        >
+          <p className="uppercase text-[11px] tracking-widest text-white/60 mb-2">
+            /// Latest
+          </p>
+          <p className="text-lg font-extrabold uppercase">music updates</p>
+        </motion.div>
+        <div className="mx-2 sm:mx-6 md:mx-8 lg:mx-16 py-10">
+          <p className="text-[12px] uppercase tracking-widest text-white/40">
+            No articles in this section yet.
+          </p>
+          <div className="mt-4 h-[1px] w-16 bg-[#F26509]"></div>
+        </div>
+        <div className="mx-0 sm:mx-6 md:mx-8 lg:mx-16">
+          <Footer />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative min-h-screen bg-black text-white">
       <Headline />
@@ -302,9 +262,9 @@ export default function Page() {
         </p>
         <p className="text-lg font-extrabold uppercase">music updates</p>
       </motion.div>
-      
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mx-0 sm:mx-6 md:mx-8 lg:mx-16 ">
-        {displayArticles.map((article, index) => (
+        {articles.map((article, index) => (
           <motion.div
             key={`${article.id}-${index}`}
             variants={fadeUp}
@@ -321,12 +281,7 @@ export default function Page() {
                 alt={article.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 onError={(e) => {
-                  const localImages = [
-                    "/images/victony.png",
-                    "/images/wizkid.png",
-                    "/images/minz.png",
-                  ];
-                  e.target.src = localImages[Math.floor(Math.random() * localImages.length)];
+                  e.target.src = "/images/placeholder.jpg";
                   e.target.onerror = null;
                 }}
               />
@@ -347,7 +302,7 @@ export default function Page() {
         ))}
       </div>
 
-      {/* Load More Button - Only show if there are more articles */}
+      {/* Load More Button */}
       {articles.length > 0 && hasMore && (
         <div className="bg-black py-2 md:py-6 flex justify-center mt-2">
           <button

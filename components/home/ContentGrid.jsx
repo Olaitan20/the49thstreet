@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { wpFetch } from "@/lib/wordpress";
 
 export default function ContentGrid() {
   const router = useRouter();
@@ -40,12 +41,8 @@ export default function ContentGrid() {
   useEffect(() => {
     const fetchContributors = async () => {
       try {
-        const contributorsResponse = await fetch(
-          "https://staging.the49thstreet.com/wp-json/the49th/v1/contributors"
-        );
-
-        if (contributorsResponse.ok) {
-          const contributors = await contributorsResponse.json();
+        const contributors = await wpFetch("/the49th/v1/contributors");
+        if (contributors) {
           const contribMap = {};
           contributors.forEach((contributor) => {
             contribMap[contributor.id] = contributor.name;
@@ -69,13 +66,9 @@ export default function ContentGrid() {
         setIsLoadingArticles(true);
 
         // Fetch posts with embedded data
-        const response = await fetch(
-          "https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&per_page=3"
+        const posts = await wpFetch(
+          "/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&per_page=3"
         );
-
-        if (!response.ok) throw new Error("Failed to fetch posts");
-
-        const posts = await response.json();
 
         // Create an array to store articles with contributor info
         const formattedArticles = [];

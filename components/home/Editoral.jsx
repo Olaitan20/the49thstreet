@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { wpFetch } from "@/lib/wordpress";
 
 export default function Editorial() {
   const router = useRouter();
@@ -45,18 +46,12 @@ export default function Editorial() {
   useEffect(() => {
     const fetchContributors = async () => {
       try {
-        const contributorsResponse = await fetch(
-          "https://staging.the49thstreet.com/wp-json/the49th/v1/contributors"
-        );
-
-        if (contributorsResponse.ok) {
-          const contributors = await contributorsResponse.json();
-          const contribMap = {};
-          contributors.forEach((contributor) => {
-            contribMap[contributor.id] = contributor.name;
-          });
-          setContributorsMap(contribMap);
-        }
+        const contributors = await wpFetch("/the49th/v1/contributors");
+        const contribMap = {};
+        contributors.forEach((contributor) => {
+          contribMap[contributor.id] = contributor.name;
+        });
+        setContributorsMap(contribMap);
       } catch (error) {
         console.error("Error fetching contributors:", error);
       }
@@ -68,54 +63,51 @@ export default function Editorial() {
   // Fetch 49th-exclusive category posts after contributors are loaded
   useEffect(() => {
     const fetchExclusivePosts = async () => {
-      if (Object.keys(contributorsMap).length === 0) return; // Wait for contributors
+      if (Object.keys(contributorsMap).length === 0) return;
 
       try {
         setIsLoadingArticles(true);
 
-        // Fetch category by slug
-        const categoriesResponse = await fetch(
-          "https://staging.the49thstreet.com/wp-json/wp/v2/categories?slug=49th-exclusive",
-        );
-        const categories = await categoriesResponse.json();
-
         let posts = [];
 
-        if (categories.length > 0) {
-          const categoryId = categories[0].id;
-
-          const postsResponse = await fetch(
-            `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&per_page=3`,
+        // Try 49th-exclusive category first
+        try {
+          const categories = await wpFetch(
+            "/wp/v2/categories?slug=49th-exclusive",
           );
+          if (categories.length > 0) {
+            const categoryId = categories[0].id;
+            posts = await wpFetch(
+              `/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&categories=${categoryId}&per_page=3&orderby=date&order=desc`,
+            );
+          }
+        } catch (e) {
+          console.error("Error fetching exclusive category:", e);
+        }
 
-          if (postsResponse.ok) {
-            posts = await postsResponse.json();
+        // Fallback to generic recent posts
+        if (posts.length === 0) {
+          try {
+            posts = await wpFetch(
+              "/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&per_page=3&orderby=date&order=desc",
+            );
+          } catch (e) {
+            console.error("Error fetching fallback posts:", e);
           }
         }
 
-        // Fallbacks
-        if (posts.length === 0) {
-          const latestResponse = await fetch(
-            "https://staging.the49thstreet.com/wp/v2/posts?_embed&per_page=3&orderby=date&order=desc",
-          );
-          posts = await latestResponse.json();
-        }
-
-        const formatted = posts.map((post, index) => {
+        const formatted = posts.map((post) => {
           const featuredImage =
             post._embedded?.["wp:featuredmedia"]?.[0]?.source_url ||
-            ["/images/victony.png", "/images/wizkid.png", "/images/minz.png"][
-              index % 3
-            ];
+            "/images/placeholder.jpg";
 
-          // Get contributor name from contributors map
           const contributorId = post.author;
-          let contributorName = "49TH STREET"; // Default fallback
-          
+          let contributorName = "49TH STREET";
+
           if (contributorId && contributorsMap[contributorId]) {
             contributorName = contributorsMap[contributorId];
           }
-          
+
           const categories = post._embedded?.["wp:term"]?.[0] || [];
           const category =
             categories.length > 0
@@ -137,64 +129,20 @@ export default function Editorial() {
         setArticles(formatted);
       } catch (error) {
         console.error(error);
-        // Convert static articles to use contributor instead of author
-        setArticles(staticArticles.map(article => ({
-          ...article,
-          contributor: article.author, // Convert author to contributor
-          contributorId: null
-        })));
+        setArticles([]);
       } finally {
         setIsLoadingArticles(false);
       }
     };
 
     fetchExclusivePosts();
-  }, [contributorsMap]); // Re-fetch posts when contributorsMap changes
+  }, [contributorsMap]);
 
-  // See all handler - links to feed page
+  // See all handler
   const handleSeeAll = () => {
     setLoading(true);
-    setTimeout(() => router.push("/news"), 1500); // Changed to /feed
+    setTimeout(() => router.push("/news"), 1500);
   };
-
-  // Static fallback
-  const staticArticles = [
-    {
-      id: 1,
-      image: "/images/victony.png",
-      title:
-        "Victony Scores New Certification With Efforts On Victony's 'Stubborn'",
-      author: "IAM NOONE",
-      category: "49TH EXCLUSIVE",
-      time: "5 MINS AGO",
-      slug: "victony-certification",
-    },
-    {
-      id: 2,
-      image: "/images/wizkid.png",
-      title: "Wizkid Makes Surprise Nativeland Appearance",
-      author: "49TH STREET",
-      category: "49TH EXCLUSIVE",
-      time: "20 MINS AGO",
-      slug: "wizkid-nativeland",
-    },
-    {
-      id: 3,
-      image: "/images/minz.png",
-      title: "Minz Stuns For Orange",
-      author: "TEMPLE EGEMESI",
-      category: "49TH EXCLUSIVE",
-      time: "23 MINS AGO",
-      slug: "minz-orange",
-    },
-  ];
-
-  const displayArticles = articles.length > 0 
-    ? articles 
-    : staticArticles.map(article => ({
-        ...article,
-        contributor: article.author // Convert author to contributor
-      }));
 
   // Loading State UI
   if (isLoadingArticles || Object.keys(contributorsMap).length === 0) {
@@ -245,6 +193,30 @@ export default function Editorial() {
     );
   }
 
+  // Empty state
+  if (articles.length === 0) {
+    return (
+      <div className="bg-white md:bg-transparent">
+        <section className="mx-0 sm:mx-6 md:mx-8 lg:mx-16 pt-[24px] md:pt-0 md:mt-20">
+          <div className="mb-4 md:mb-8 px-4 md:px-0">
+            <p className="text-[12px] uppercase mb-1 tracking-widest text-black md:text-white/50">
+              /// More Articles
+            </p>
+            <p className="text-[14px] md:text-[16px] uppercase font-extrabold text-black md:text-white">
+              FRESH OFF THE PRESS
+            </p>
+          </div>
+          <div className="px-4 md:px-0 py-10">
+            <p className="text-[12px] uppercase tracking-widest text-black/40 md:text-white/40">
+              New editorials coming soon.
+            </p>
+            <div className="mt-4 h-[1px] w-16 bg-[#F26509]"></div>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   // MAIN RENDER
   return (
     <div className="bg-white md:bg-transparent">
@@ -278,7 +250,7 @@ export default function Editorial() {
 
         {/* Article Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 px-4 md:px-0 lg:grid-cols-3 gap-4 md:gap-6">
-          {displayArticles.map((article) => (
+          {articles.map((article) => (
             <div
               key={article.id}
               className="transition cursor-pointer group flex items-center hover:opacity-80"

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { wpFetch } from "@/lib/wordpress";
 
 export default function Sports() {
   const router = useRouter();
@@ -37,18 +38,12 @@ export default function Sports() {
   useEffect(() => {
     const fetchContributors = async () => {
       try {
-        const contributorsResponse = await fetch(
-          "https://staging.the49thstreet.com/wp-json/the49th/v1/contributors"
-        );
-
-        if (contributorsResponse.ok) {
-          const contributors = await contributorsResponse.json();
-          const contribMap = {};
-          contributors.forEach((contributor) => {
-            contribMap[contributor.id] = contributor.name;
-          });
-          setContributorsMap(contribMap);
-        }
+        const contributors = await wpFetch("/the49th/v1/contributors");
+        const contribMap = {};
+        contributors.forEach((contributor) => {
+          contribMap[contributor.id] = contributor.name;
+        });
+        setContributorsMap(contribMap);
       } catch (error) {
         console.error("Error fetching contributors:", error);
       }
@@ -60,68 +55,51 @@ export default function Sports() {
   // Fetch sports category posts after contributors are loaded
   useEffect(() => {
     const fetchSportsPosts = async () => {
-      if (Object.keys(contributorsMap).length === 0) return; // Wait for contributors
+      if (Object.keys(contributorsMap).length === 0) return;
 
       try {
         setIsLoadingArticles(true);
 
-        const allCategoriesResponse = await fetch(
-          "https://staging.the49thstreet.com/wp-json/wp/v2/categories",
-        );
-
-        if (!allCategoriesResponse.ok) {
-          throw new Error("Failed to fetch categories");
-        }
-
-        const allCategories = await allCategoriesResponse.json();
-
-        let sportsCategory = allCategories.find(
-          (cat) =>
-            cat.slug.toLowerCase().includes("sport") ||
-            cat.name.toLowerCase().includes("sport"),
-        );
-
         let posts = [];
+        let sportsCategory = null;
 
-        if (sportsCategory) {
-          const postsResponse = await fetch(
-            `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&categories=${sportsCategory.id}&per_page=3&orderby=date&order=desc`,
+        // Try to find sports category
+        try {
+          const allCategories = await wpFetch("/wp/v2/categories");
+          sportsCategory = allCategories.find(
+            (cat) =>
+              cat.slug.toLowerCase().includes("sport") ||
+              cat.name.toLowerCase().includes("sport"),
           );
 
-          if (postsResponse.ok) {
-            posts = await postsResponse.json();
+          if (sportsCategory) {
+            posts = await wpFetch(
+              `/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&categories=${sportsCategory.id}&per_page=3&orderby=date&order=desc`,
+            );
           }
+        } catch (e) {
+          console.error("Error fetching sports category:", e);
         }
 
+        // Fallback to generic recent posts
         if (posts.length === 0) {
-          const latestResponse = await fetch(
-            "https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&per_page=3&orderby=date&order=desc",
-          );
-
-          if (latestResponse.ok) {
-            posts = await latestResponse.json();
+          try {
+            posts = await wpFetch(
+              "/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&per_page=3&orderby=date&order=desc",
+            );
+          } catch (e) {
+            console.error("Error fetching fallback posts:", e);
           }
         }
 
-        const formattedArticles = posts.map((post, index) => {
-          const featuredMedia = post._embedded?.["wp:featuredmedia"];
-          let featuredImage = "/images/placeholder.jpg";
+        const formattedArticles = posts.map((post) => {
+          const featuredImage =
+            post._embedded?.["wp:featuredmedia"]?.[0]?.source_url ||
+            "/images/placeholder.jpg";
 
-          if (featuredMedia && featuredMedia[0]?.source_url) {
-            featuredImage = featuredMedia[0].source_url;
-          } else {
-            const sportsImages = [
-              "/images/burna.png",
-              "/images/wizkid.png",
-              "/images/minz.png",
-            ];
-            featuredImage = sportsImages[index % sportsImages.length];
-          }
-
-          // Get contributor name from contributors map
           const contributorId = post.author;
-          let contributorName = "SPORTS DESK"; // Default fallback
-          
+          let contributorName = "SPORTS DESK";
+
           if (contributorId && contributorsMap[contributorId]) {
             contributorName = contributorsMap[contributorId];
           }
@@ -150,19 +128,14 @@ export default function Sports() {
         setArticles(formattedArticles);
       } catch (error) {
         console.error("Error fetching sports posts:", error);
-        // Update static articles to use contributor instead of author
-        setArticles(staticArticles.map(article => ({
-          ...article,
-          contributor: article.author, // Convert author to contributor
-          contributorId: null
-        })));
+        setArticles([]);
       } finally {
         setIsLoadingArticles(false);
       }
     };
 
     fetchSportsPosts();
-  }, [contributorsMap]); // Re-fetch posts when contributorsMap changes
+  }, [contributorsMap]);
 
   const handleLoadMore = () => {
     setLoading(true);
@@ -170,41 +143,6 @@ export default function Sports() {
       router.push("/sports");
     }, 1500);
   };
-
-  const staticArticles = [
-    {
-      id: 1,
-      image: "/images/burna.png",
-      title: "Super Eagles Qualify for World Cup 2026",
-      author: "SPORTS DESK",
-      category: "SPORTS",
-      time: "2 HOURS AGO",
-      slug: "super-eagles-world-cup",
-    },
-    {
-      id: 2,
-      image: "/images/wizkid.png",
-      title: "NBA Africa Games Coming to Lagos",
-      author: "SPORTS CORRESPONDENT",
-      category: "SPORTS",
-      time: "1 DAY AGO",
-      slug: "nba-africa-games-lagos",
-    },
-    {
-      id: 3,
-      image: "/images/minz.png",
-      title: "Athletics Federation Announces New Talent Program",
-      author: "SPORTS ANALYST",
-      category: "SPORTS",
-      time: "3 DAYS AGO",
-      slug: "athletics-talent-program",
-    },
-  ];
-
-  const displayArticles = articles.length > 0 ? articles : staticArticles.map(article => ({
-    ...article,
-    contributor: article.author // Convert author to contributor for static articles
-  }));
 
   // Show loading state while waiting for contributors or articles
   if (isLoadingArticles || Object.keys(contributorsMap).length === 0) {
@@ -236,6 +174,30 @@ export default function Sports() {
     );
   }
 
+  // Empty state
+  if (articles.length === 0) {
+    return (
+      <div className="bg-white md:bg-transparent">
+        <section className="mx-0 sm:mx-6 md:mx-8 lg:mx-16 pt-[24px] md:pt-0 md:mt-20">
+          <div className="mb-4 md:mb-8 px-4 md:px-0">
+            <p className="text-[12px] uppercase mb-1 tracking-widest text-black md:text-white/50">
+              /// SPORTS
+            </p>
+            <p className="text-base md:text-[16px] uppercase font-extrabold text-black md:text-white">
+              Latest in the world of sports
+            </p>
+          </div>
+          <div className="px-4 md:px-0 py-10">
+            <p className="text-[12px] uppercase tracking-widest text-black/40 md:text-white/40">
+              No sports updates yet.
+            </p>
+            <div className="mt-4 h-[1px] w-16 bg-[#F26509]"></div>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white md:bg-transparent">
       <section className="mx-0 sm:mx-6 md:mx-8 lg:mx-16 pt-[24px] md:pt-0 md:mt-20">
@@ -249,7 +211,7 @@ export default function Sports() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {displayArticles.map((article) => (
+          {articles.map((article) => (
             <div
               key={article.id}
               className="bg-white hover:shadow-lg transition-shadow cursor-pointer group"
@@ -261,16 +223,7 @@ export default function Sports() {
                   alt={article.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   onError={(e) => {
-                    const localImages = [
-                      "/images/burna.png",
-                      "/images/wizkid.png",
-                      "/images/minz.png",
-                    ];
-                    const randomLocal =
-                      localImages[
-                        Math.floor(Math.random() * localImages.length)
-                      ];
-                    e.target.src = randomLocal;
+                    e.target.src = "/images/placeholder.jpg";
                     e.target.onerror = null;
                   }}
                 />

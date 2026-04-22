@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { wpFetch } from "@/lib/wordpress";
 
 export default function Latest() {
   const router = useRouter();
@@ -40,18 +41,12 @@ export default function Latest() {
   useEffect(() => {
     const fetchContributors = async () => {
       try {
-        const contributorsResponse = await fetch(
-          "https://staging.the49thstreet.com/wp-json/the49th/v1/contributors"
-        );
-
-        if (contributorsResponse.ok) {
-          const contributors = await contributorsResponse.json();
-          const contribMap = {};
-          contributors.forEach((contributor) => {
-            contribMap[contributor.id] = contributor.name;
-          });
-          setContributorsMap(contribMap);
-        }
+        const contributors = await wpFetch("/the49th/v1/contributors");
+        const contribMap = {};
+        contributors.forEach((contributor) => {
+          contribMap[contributor.id] = contributor.name;
+        });
+        setContributorsMap(contribMap);
       } catch (error) {
         console.error("Error fetching contributors:", error);
       }
@@ -63,41 +58,49 @@ export default function Latest() {
   // Fetch music posts after contributors are loaded
   useEffect(() => {
     const fetchMusicPosts = async () => {
-      if (Object.keys(contributorsMap).length === 0) return; // Wait for contributors
+      if (Object.keys(contributorsMap).length === 0) return;
 
       try {
         setIsLoadingArticles(true);
 
-        // Get Music category ID
-        const categoriesResponse = await fetch(
-          "https://staging.the49thstreet.com/wp-json/wp/v2/categories?slug=music",
-        );
-        const categories = await categoriesResponse.json();
-        if (!categories.length) {
-          setArticles([]);
-          return;
-        }
-        const musicCategoryId = categories[0].id;
+        let posts = [];
 
-        // Fetch posts from Music category
-        const postsResponse = await fetch(
-          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&categories=${musicCategoryId}&per_page=3&orderby=date&order=desc`,
-        );
-        const posts = await postsResponse.json();
+        // Try music category first
+        try {
+          const categories = await wpFetch("/wp/v2/categories?slug=music");
+          if (categories.length > 0) {
+            const musicCategoryId = categories[0].id;
+            posts = await wpFetch(
+              `/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&categories=${musicCategoryId}&per_page=3&orderby=date&order=desc`,
+            );
+          }
+        } catch (e) {
+          console.error("Error fetching music category:", e);
+        }
+
+        // Fallback to generic recent posts
+        if (posts.length === 0) {
+          try {
+            posts = await wpFetch(
+              "/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&per_page=3&orderby=date&order=desc",
+            );
+          } catch (e) {
+            console.error("Error fetching fallback posts:", e);
+          }
+        }
 
         const formattedArticles = posts.map((post) => {
           const featuredImage =
             post._embedded?.["wp:featuredmedia"]?.[0]?.source_url ||
             "/images/placeholder.jpg";
-          
-          // Get contributor name from contributors map
+
           const contributorId = post.author;
-          let contributorName = "49TH STREET"; // Default fallback
-          
+          let contributorName = "49TH STREET";
+
           if (contributorId && contributorsMap[contributorId]) {
             contributorName = contributorsMap[contributorId];
           }
-          
+
           const categories = post._embedded?.["wp:term"]?.[0] || [];
           const category =
             categories.length > 0 ? categories[0].name.toUpperCase() : "MUSIC";
@@ -124,52 +127,12 @@ export default function Latest() {
     };
 
     fetchMusicPosts();
-  }, [contributorsMap]); // Re-fetch posts when contributorsMap changes
+  }, [contributorsMap]);
 
   const handleLoadMore = () => {
     setLoading(true);
     setTimeout(() => router.push("/music"), 1200);
   };
-
-  // Static fallback
-  const staticArticles = [
-    {
-      id: 1,
-      image: "/images/burna.png",
-      title:
-        "Victony Scores New Certification With Efforts On Victony's 'Stubborn'",
-      author: "IAM NOONE",
-      category: "MUSIC",
-      time: "5 MINS AGO",
-      slug: "victony-certification",
-    },
-    {
-      id: 2,
-      image: "/images/olamide.png",
-      title: "Wizkid Makes Surprise Nativeland Appearance",
-      author: "49TH STREET",
-      category: "MUSIC",
-      time: "20 MINS AGO",
-      slug: "wizkid-nativeland",
-    },
-    {
-      id: 3,
-      image: "/images/chowdeck.png",
-      title: "New Music Collaboration Breaks Records",
-      author: "TEMPLE EGEMESI",
-      category: "MUSIC",
-      time: "23 MINS AGO",
-      slug: "music-collaboration",
-    },
-  ];
-
-  const displayArticles = articles.length > 0 
-    ? articles 
-    : staticArticles.map(article => ({
-        ...article,
-        contributor: article.author, // Convert author to contributor
-        contributorId: null
-      }));
 
   // Show loading while waiting for contributors or articles
   if (isLoadingArticles || Object.keys(contributorsMap).length === 0) {
@@ -211,6 +174,30 @@ export default function Latest() {
     );
   }
 
+  // Empty state
+  if (articles.length === 0) {
+    return (
+      <div className="bg-white md:bg-transparent">
+        <section className="px-0 sm:px-6 md:px-8 lg:px-16 pt-[24px] md:pt-0 md:mt-20">
+          <div className="mb-4 md:mb-8 px-4 md:px-0">
+            <p className="text-[12px] uppercase mb-1 tracking-widest text-black md:text-white/50">
+              /// MUSIC
+            </p>
+            <p className="text-base md:text-[16px] uppercase font-extrabold text-black md:text-white">
+              Latest in the world of music
+            </p>
+          </div>
+          <div className="px-4 md:px-0 py-10">
+            <p className="text-[12px] uppercase tracking-widest text-black/40 md:text-white/40">
+              No new music stories yet.
+            </p>
+            <div className="mt-4 h-[1px] w-16 bg-[#F26509]"></div>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white pb-0 md:bg-transparent">
       <section className="px-0 sm:px-6 md:px-8 lg:px-16 pt-[24px] md:pt-0 md:mt-">
@@ -226,7 +213,7 @@ export default function Latest() {
 
         {/* Articles */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ">
-          {displayArticles.map((article) => (
+          {articles.map((article) => (
             <div
               key={article.id}
               className="bg-white hover:shadow-lg transition-all cursor-pointer group"

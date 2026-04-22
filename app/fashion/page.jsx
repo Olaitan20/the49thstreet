@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Headline from "@/components/layout/Headline";
 import Footer from "@/components/layout/Footer";
+import { wpFetch } from "@/lib/wordpress";
 
 export default function Page() {
   const router = useRouter();
@@ -52,18 +53,12 @@ export default function Page() {
   useEffect(() => {
     const fetchContributors = async () => {
       try {
-        const contributorsResponse = await fetch(
-          "https://staging.the49thstreet.com/wp-json/the49th/v1/contributors"
-        );
-
-        if (contributorsResponse.ok) {
-          const contributors = await contributorsResponse.json();
-          const contribMap = {};
-          contributors.forEach((contributor) => {
-            contribMap[contributor.id] = contributor.name;
-          });
-          setContributorsMap(contribMap);
-        }
+        const contributors = await wpFetch("/the49th/v1/contributors");
+        const contribMap = {};
+        contributors.forEach((contributor) => {
+          contribMap[contributor.id] = contributor.name;
+        });
+        setContributorsMap(contribMap);
       } catch (error) {
         console.error("Error fetching contributors:", error);
       }
@@ -76,20 +71,9 @@ export default function Page() {
   useEffect(() => {
     const getFashionCategory = async () => {
       try {
-        const categoriesResponse = await fetch(
-          "https://staging.the49thstreet.com/wp-json/wp/v2/categories?slug=fashion",
-        );
-
-        if (!categoriesResponse.ok) {
-          throw new Error("Failed to fetch categories");
-        }
-
-        const categories = await categoriesResponse.json();
-        console.log("👗 Fashion categories found:", categories);
-
+        const categories = await wpFetch("/wp/v2/categories?slug=fashion");
         if (categories.length > 0) {
           setFashionCategoryId(categories[0].id);
-          console.log("Fashion category ID:", categories[0].id);
         }
       } catch (error) {
         console.error("Error fetching fashion category:", error);
@@ -101,99 +85,61 @@ export default function Page() {
 
   // Fetch articles function with pagination
   const fetchArticles = async (pageNum = 1) => {
-    if (Object.keys(contributorsMap).length === 0) return; // Wait for contributors
+    if (Object.keys(contributorsMap).length === 0) return;
 
     try {
       setLoading(true);
 
-      console.log(`Fetching fashion posts page ${pageNum}...`);
-
       let posts = [];
+      let totalPages = 1;
 
       // Try fashion category if we have the ID
       if (fashionCategoryId) {
-        const postsResponse = await fetch(
-          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&categories=${fashionCategoryId}&per_page=9&page=${pageNum}&orderby=date&order=desc`,
-        );
+        const url = `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&categories=${fashionCategoryId}&per_page=9&page=${pageNum}&orderby=date&order=desc`;
+        const postsResponse = await fetch(url);
 
         if (postsResponse.ok) {
           posts = await postsResponse.json();
-
-          // Get pagination info from headers
-          const totalPages = parseInt(
+          totalPages = parseInt(
             postsResponse.headers.get("X-WP-TotalPages") || "1",
           );
-          const totalItems = parseInt(
-            postsResponse.headers.get("X-WP-Total") || "0",
-          );
-          console.log(
-            `📊 Page ${pageNum} of ${totalPages}, Total items: ${totalItems}`,
-          );
-          setHasMore(pageNum < totalPages);
-
-          console.log("Fashion posts found:", posts.length);
         }
       }
 
       // If no fashion posts found, use latest posts
       if (posts.length === 0) {
-        console.log("🔄 No fashion posts, fetching latest posts...");
-        const latestResponse = await fetch(
-          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&per_page=9&page=${pageNum}&orderby=date&order=desc`,
-        );
+        const url = `https://staging.the49thstreet.com/wp-json/wp/v2/posts?_embed=author,wp:featuredmedia,wp:term&per_page=9&page=${pageNum}&orderby=date&order=desc`;
+        const latestResponse = await fetch(url);
 
         if (latestResponse.ok) {
           posts = await latestResponse.json();
-
-          // Get pagination info from headers
-          const totalPages = parseInt(
+          totalPages = parseInt(
             latestResponse.headers.get("X-WP-TotalPages") || "1",
           );
-          const totalItems = parseInt(
-            latestResponse.headers.get("X-WP-Total") || "0",
-          );
-          console.log(
-            `📊 Page ${pageNum} of ${totalPages}, Total items: ${totalItems}`,
-          );
-          setHasMore(pageNum < totalPages);
-
-          console.log("📝 Latest posts found:", posts.length);
         }
       }
 
+      setHasMore(pageNum < totalPages);
+
       // Transform WordPress data
-      const formattedArticles = posts.map((post, index) => {
-        // Get featured image or use fallback
-        let featuredImage = "/images/placeholder.jpg";
-        const featuredMedia = post._embedded?.["wp:featuredmedia"];
+      const formattedArticles = posts.map((post) => {
+        const featuredImage =
+          post._embedded?.["wp:featuredmedia"]?.[0]?.source_url ||
+          "/images/placeholder.jpg";
 
-        if (featuredMedia && featuredMedia[0] && featuredMedia[0].source_url) {
-          featuredImage = featuredMedia[0].source_url;
-        } else {
-          // Use fashion-themed fallback images
-          const fashionImages = [
-            "/images/minz.png",
-            "/images/victony.png",
-            "/images/wizkid.png",
-          ];
-          featuredImage = fashionImages[index % fashionImages.length];
-        }
-
-        // Get contributor name from contributors map
         const contributorId = post.author;
-        let contributorName = "FASHION DESK"; // Default fallback
-        
+        let contributorName = "FASHION DESK";
+
         if (contributorId && contributorsMap[contributorId]) {
           contributorName = contributorsMap[contributorId];
         }
-        
+
         const postCategories = post._embedded?.["wp:term"]?.[0] || [];
         const category =
           postCategories.length > 0
             ? postCategories[0].name.toUpperCase()
             : "FASHION";
 
-        // Decode HTML entities in title
         const cleanTitle = decodeHtmlEntities(post.title.rendered);
 
         return {
@@ -208,7 +154,6 @@ export default function Page() {
         };
       });
 
-      // Add new articles to existing list or set initial articles
       if (pageNum === 1) {
         setArticles(formattedArticles);
       } else {
@@ -218,15 +163,9 @@ export default function Page() {
       setPage(pageNum);
     } catch (error) {
       console.error("Error fetching fashion posts:", error);
-      // Use static data as fallback only on initial load
       if (pageNum === 1) {
-        console.log("🔄 Using static fashion data");
-        setArticles(staticArticles.map(article => ({
-          ...article,
-          contributor: article.author, // Convert author to contributor
-          contributorId: null
-        })));
-        setHasMore(false); // No more pages for static data
+        setArticles([]);
+        setHasMore(false);
       }
     } finally {
       setLoading(false);
@@ -239,8 +178,7 @@ export default function Page() {
   // Initial fetch - wait for both contributors and fashion category
   useEffect(() => {
     if (Object.keys(contributorsMap).length === 0) return;
-    
-    // Give time to get fashion category ID
+
     const timer = setTimeout(() => {
       fetchArticles(1);
     }, 500);
@@ -255,44 +193,6 @@ export default function Page() {
     }
   };
 
-  // Static fallback data
-  const staticArticles = [
-    {
-      id: 1,
-      image: "/images/minz.png",
-      title: "Minz Stuns For Orange Fashion Campaign",
-      author: "FASHION EDITOR",
-      category: "FASHION",
-      time: "5 MINS AGO",
-      slug: "minz-orange-campaign",
-    },
-    {
-      id: 2,
-      image: "/images/victony.png",
-      title: "Lagos Fashion Week Announces 2024 Lineup",
-      author: "FASHION DESK",
-      category: "FASHION",
-      time: "20 MINS AGO",
-      slug: "lagos-fashion-week",
-    },
-    {
-      id: 3,
-      image: "/images/wizkid.png",
-      title: "African Designers Dominate Paris Runway",
-      author: "STYLE CORRESPONDENT",
-      category: "FASHION",
-      time: "23 MINS AGO",
-      slug: "african-designers-paris",
-    },
-  ];
-
-  const displayArticles = articles.length > 0 
-    ? articles 
-    : staticArticles.map(article => ({
-        ...article,
-        contributor: article.author // Convert author to contributor
-      }));
-
   const fadeUp = {
     hidden: { opacity: 0, y: 30 },
     visible: (i = 1) => ({
@@ -306,13 +206,12 @@ export default function Page() {
     }),
   };
 
-  // Loading state - show while waiting for contributors or articles
+  // Loading state
   if ((isLoadingArticles && Object.keys(contributorsMap).length === 0) || isLoadingArticles) {
     return (
       <div className="relative min-h-screen bg-black text-white">
         <Headline />
 
-        {/* Loading Skeleton */}
         <motion.div
           variants={fadeUp}
           initial="visible"
@@ -326,7 +225,6 @@ export default function Page() {
           <p className="text-lg font-extrabold uppercase">Fashion News</p>
         </motion.div>
 
-        {/* Loading Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mx-0 sm:mx-6 md:mx-8 lg:mx-16">
           {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((item) => (
             <div key={item} className="bg-gray-700 animate-pulse">
@@ -346,12 +244,40 @@ export default function Page() {
     );
   }
 
+  // Empty state
+  if (articles.length === 0) {
+    return (
+      <div className="relative min-h-screen bg-black text-white">
+        <Headline />
+        <motion.div
+          variants={fadeUp}
+          initial="visible"
+          animate="visible"
+          custom={0.1}
+          className="mx-2 sm:mx-6 md:mx-8 lg:mx-16 py-4"
+        >
+          <p className="uppercase text-[11px] tracking-widest text-white/60 mb-2">
+            /// Latest
+          </p>
+          <p className="text-lg font-extrabold uppercase">Fashion News</p>
+        </motion.div>
+        <div className="mx-2 sm:mx-6 md:mx-8 lg:mx-16 py-10">
+          <p className="text-[12px] uppercase tracking-widest text-white/40">
+            No fashion stories yet.
+          </p>
+          <div className="mt-4 h-[1px] w-16 bg-[#F26509]"></div>
+        </div>
+        <div className="mx-0 sm:mx-6 md:mx-8 lg:mx-16">
+          <Footer />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative min-h-screen bg-black text-white">
-      {/* Headline */}
       <Headline />
 
-      {/* Section Header */}
       <motion.div
         variants={fadeUp}
         initial="visible"
@@ -365,9 +291,8 @@ export default function Page() {
         <p className="text-lg font-extrabold uppercase">Fashion News</p>
       </motion.div>
 
-      {/* Articles Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mx-0 sm:mx-6 md:mx-8 lg:mx-16 ">
-        {displayArticles.map((article, index) => (
+        {articles.map((article, index) => (
           <motion.div
             key={`${article.id}-${index}`}
             variants={fadeUp}
@@ -384,18 +309,7 @@ export default function Page() {
                 alt={article.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 onError={(e) => {
-                  console.log("❌ Image failed to load:", article.image);
-                  // Fallback to local image
-                  const fashionImages = [
-                    "/images/minz.png",
-                    "/images/victony.png",
-                    "/images/wizkid.png",
-                  ];
-                  const randomFashion =
-                    fashionImages[
-                      Math.floor(Math.random() * fashionImages.length)
-                    ];
-                  e.target.src = randomFashion;
+                  e.target.src = "/images/placeholder.jpg";
                   e.target.onerror = null;
                 }}
               />
@@ -423,8 +337,8 @@ export default function Page() {
         ))}
       </div>
 
-      {/* Load More Button - Only show if there are more articles */}
-      {displayArticles.length > 0 && hasMore && (
+      {/* Load More Button */}
+      {articles.length > 0 && hasMore && (
         <div className="bg-black py-2 md:py-6 flex justify-center mt-2">
           <button
             onClick={handleLoadMore}
@@ -444,14 +358,13 @@ export default function Page() {
       )}
 
       {/* No more articles message */}
-      {!hasMore && displayArticles.length > 0 && (
+      {!hasMore && articles.length > 0 && (
         <div className="bg-black py-2 md:py-6 flex justify-center mt-2">
           <p className="text-white/60 text-sm">No more articles to load</p>
         </div>
       )}
 
       <div className="mx-0 sm:mx-6 md:mx-8 lg:mx-16">
-        {/* Footer */}
         <Footer />
       </div>
     </div>
