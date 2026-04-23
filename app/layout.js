@@ -1,4 +1,5 @@
 import { Inter, Bebas_Neue } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import Header from "@/components/layout/Header";
@@ -36,6 +37,18 @@ export default function RootLayout({ children }) {
       </head>
 
       <body className={`${inter.variable} ${bebasNeue.variable}`}>
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-RB0FCMYLCS"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-RB0FCMYLCS');
+          `}
+        </Script>
         <TopBar />
         <Header />
         {children}
