@@ -102,8 +102,7 @@ export default function Magazine() {
       let posts = [];
       let totalPages = 1;
 
-      // Fetch 8 posts for carousel
-      const perPage = 10;
+      const perPage = 20;
 
       if (uncvrCategoryId) {
         const postsResponse = await fetch(
@@ -188,15 +187,17 @@ export default function Magazine() {
 
   // Handle next/previous for carousel
   const handleNext = () => {
-    setCurrentIndex((prev) =>
-      prev === displayMagazines.slice(0, 10).length - 1 ? 0 : prev + 1,
-    );
+    setCurrentIndex((prev) => {
+      const total = magazines.length > 0 ? magazines.length : 8;
+      return prev === total - 1 ? 0 : prev + 1;
+    });
   };
 
   const handlePrev = () => {
-    setCurrentIndex((prev) =>
-      prev === 0 ? displayMagazines.slice(0, 10).length - 1 : prev - 1,
-    );
+    setCurrentIndex((prev) => {
+      const total = magazines.length > 0 ? magazines.length : 8;
+      return prev === 0 ? total - 1 : prev - 1;
+    });
   };
 
   // Handle individual magazine click
@@ -292,7 +293,7 @@ export default function Magazine() {
   ];
 
   const displayMagazines = magazines.length > 0 ? magazines : staticMagazines;
-  const visibleMagazines = displayMagazines.slice(0, 10);
+  const visibleMagazines = displayMagazines;
 
   if (isLoadingMagazines && magazines.length === 0) {
     return (

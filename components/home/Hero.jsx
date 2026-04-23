@@ -117,7 +117,7 @@ export default function Hero() {
             image: featuredImage,
             title: cleanTitle,
             subtitle: `/// ${category}`,
-            details: `${contributor} • ${category} • ${getTimeAgo(post.date)}`,
+            details: `${contributor.toUpperCase()} • ${category} • ${getTimeAgo(post.date)}`,
             slug: post.slug,
             category: category,
             content: post.content?.rendered || "",
