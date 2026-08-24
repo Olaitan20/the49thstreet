@@ -1,4 +1,5 @@
 import ArticleClient from "./ArticleClient";
+import { getPost } from "@/lib/getPost";
 
 // Simple HTML entity decoder for common entities
 const decodeHtmlEntities = (text) => {
@@ -22,41 +23,16 @@ export async function generateMetadata({ params }) {
   const { slug } = await params;
 
   try {
-    // Fetch article data for metadata
-    // Try direct slug match first
-    let response = await fetch(
-      `https://staging.the49thstreet.com/wp-json/wp/v2/posts?slug=${slug}&_embed=author,wp:featuredmedia,wp:term&per_page=1`,
-      { next: { revalidate: 60 } }
-    );
+    // Shared cached fetch — deduplicated with the page component below, so
+    // one request to WordPress serves both the head tags and the body.
+    const post = await getPost(slug);
 
-    let posts = [];
-    if (response.ok) {
-        posts = await response.json();
-    }
-
-    // Fallback to search if slug doesn't match
-    if (!posts || posts.length === 0) {
-       const searchResponse = await fetch(
-          `https://staging.the49thstreet.com/wp-json/wp/v2/posts?search=${encodeURIComponent(
-            slug,
-          )}&_embed=author,wp:featuredmedia,wp:term&per_page=1`,
-           { next: { revalidate: 60 } }
-        );
-        if (searchResponse.ok) {
-           const searchData = await searchResponse.json();
-           if (searchData.length > 0) {
-               posts = searchData;
-           }
-        }
-    }
-
-    if (!posts || posts.length === 0) {
+    if (!post) {
       return {
         title: 'Article Not Found | 49th Street',
       };
     }
 
-    const post = posts[0];
     const title = decodeHtmlEntities(post.title.rendered.replace(/<[^>]*>/g, ""));
     const rawExcerpt = post.excerpt?.rendered || post.content.rendered || "";
     const excerpt = decodeHtmlEntities(rawExcerpt.replace(/<[^>]*>/g, "")).trim().substring(0, 160);
@@ -101,6 +77,13 @@ export async function generateMetadata({ params }) {
   }
 }
 
-export default function Page() {
-  return <ArticleClient />;
+export default async function Page({ params }) {
+  const { slug } = await params;
+
+  // Same cached call generateMetadata made — deduplicated within this request.
+  // Null when Server A is unavailable, in which case ArticleClient falls back
+  // to fetching in the browser exactly as it did before.
+  const post = await getPost(slug);
+
+  return <ArticleClient initialPost={post} />;
 }

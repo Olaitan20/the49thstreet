@@ -7,13 +7,90 @@ import Headline from "@/components/layout/Headline";
 import ShareBar from "@/components/ui/ShareBar";
 import Tags from "@/components/ui/Tags";
 
-export default function ArticleClient() {
+// Entity decoder that does not need `document`, so it can run during the
+// server render. The existing textarea-based decoder below stays as-is for
+// the client-side path.
+const decodeEntitiesIsomorphic = (text) => {
+  if (typeof text !== "string") return text;
+  return text
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&#8217;/g, "'")
+    .replace(/&#8216;/g, "'")
+    .replace(/&#8220;/g, '"')
+    .replace(/&#8221;/g, '"')
+    .replace(/&#8211;/g, "-")
+    .replace(/&#8212;/g, "--")
+    .replace(/&nbsp;/g, " ");
+};
+
+const getTimeAgoFrom = (dateString) => {
+  const diffInMs = new Date() - new Date(dateString);
+  const mins = Math.floor(diffInMs / (1000 * 60));
+  const hours = Math.floor(mins / 60);
+  const days = Math.floor(hours / 24);
+  const months = Math.floor(days / 30);
+  const years = Math.floor(days / 365);
+
+  if (mins < 1) return "JUST NOW";
+  if (mins < 60) return `${mins} MINS AGO`;
+  if (hours < 24) return `${hours} HOURS AGO`;
+  if (days < 30) return `${days} DAYS AGO`;
+  if (months < 12) return `${months} MONTH${months > 1 ? "S" : ""} AGO`;
+  return `${years} YEAR${years > 1 ? "S" : ""} AGO`;
+};
+
+// Build article state from a raw WordPress post. Mirrors the shape the
+// client-side fetch produces, but runs on the server too, so the body can be
+// rendered into the initial HTML.
+const formatPost = (post) => {
+  if (!post) return null;
+
+  const categories = post._embedded?.["wp:term"]?.[0] || [];
+  const allTerms = post._embedded?.["wp:term"] || [];
+  const tags =
+    allTerms.find(
+      (term) => term && term.length > 0 && term[0]?.taxonomy === "post_tag",
+    ) || [];
+  const primaryCategory =
+    categories.length > 0 ? categories[0].name.toUpperCase() : "NEWS";
+
+  // Contributor name from the embedded author. The contributors endpoint is
+  // client-only, so this is what makes a real byline available server-side.
+  const contributorName = post._embedded?.author?.[0]?.name || "49TH STREET";
+
+  return {
+    id: post.id,
+    slug: post.slug,
+    title: decodeEntitiesIsomorphic(post.title.rendered),
+    content: post.content.rendered,
+    excerpt: post.excerpt?.rendered || "",
+    image:
+      post._embedded?.["wp:featuredmedia"]?.[0]?.source_url ||
+      "/images/placeholder.jpg",
+    contributor: contributorName,
+    contributorId: post.author,
+    date: new Date(post.date).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }),
+    time: getTimeAgoFrom(post.date),
+    category: primaryCategory,
+    tags: tags,
+  };
+};
+
+export default function ArticleClient({ initialPost = null }) {
   const params = useParams();
   const slug = params.slug;
   const router = useRouter();
 
-  const [article, setArticle] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [article, setArticle] = useState(() => formatPost(initialPost));
+  const [loading, setLoading] = useState(!initialPost);
   const [error, setError] = useState(null);
   const [contributorsMap, setContributorsMap] = useState({});
 
@@ -44,6 +121,7 @@ export default function ArticleClient() {
   // Decode HTML entities
   const decodeHtmlEntities = useCallback((text) => {
     if (typeof text !== "string") return text;
+    if (typeof document === "undefined") return decodeEntitiesIsomorphic(text);
     const textarea = document.createElement("textarea");
     textarea.innerHTML = text;
     return textarea.value;
@@ -141,6 +219,11 @@ export default function ArticleClient() {
         },
       );
 
+      // DOM-dependent pass. Skipped during the server render, where the
+      // regex work above already produced the article HTML; the highlight is
+      // cosmetic and gets applied on the client.
+      if (typeof document === "undefined") return processedHtml;
+
       const container = document.createElement("div");
       container.innerHTML = processedHtml;
       const isOrange = (style) => {
@@ -161,6 +244,7 @@ export default function ArticleClient() {
 
   const extractHighlightedQuestions = useCallback((html) => {
     if (!html) return [];
+    if (typeof document === "undefined") return [];
     const container = document.createElement("div");
     container.innerHTML = html;
     const colored = Array.from(container.querySelectorAll("[style*=\"color\"]"));
@@ -274,6 +358,9 @@ export default function ArticleClient() {
   // Fetch article data after contributors are loaded
   useEffect(() => {
     const fetchArticle = async () => {
+      // Server already supplied this article — do not fetch it again.
+      if (initialPost && initialPost.slug === slug) return;
+
       if (Object.keys(contributorsMap).length === 0) return; // Wait for contributors
 
       try {
@@ -396,10 +483,29 @@ export default function ArticleClient() {
     if (slug) {
       fetchArticle();
     }
-  }, [slug, decodeHtmlEntities, getTimeAgo, contributorsMap]);
+  }, [slug, decodeHtmlEntities, getTimeAgo, contributorsMap, initialPost]);
 
-  // LOADING UI - show while waiting for contributors or article
-  if (loading || Object.keys(contributorsMap).length === 0) {
+  // Server-rendered articles arrive without `questions`, which needs the DOM
+  // to extract. Fill them in once on the client.
+  useEffect(() => {
+    if (!article || article.questions !== undefined) return;
+    const questions = extractHighlightedQuestions(article.content);
+    setArticle((prev) => (prev ? { ...prev, questions } : prev));
+  }, [article, extractHighlightedQuestions]);
+
+  // Contributor names come from a client-only endpoint. Once loaded, correct
+  // the byline if it has a different name for this author.
+  useEffect(() => {
+    if (!article || !article.contributorId) return;
+    const mapped = contributorsMap[article.contributorId];
+    if (!mapped || mapped === article.contributor) return;
+    setArticle((prev) => (prev ? { ...prev, contributor: mapped } : prev));
+  }, [article, contributorsMap]);
+
+  // LOADING UI - show only when there is no article to render. The body must
+  // not be gated on contributors: that map is filled by a client-only effect,
+  // so gating on it would force the skeleton into every server render.
+  if (!article && (loading || Object.keys(contributorsMap).length === 0)) {
     return (
       <div className="min-h-screen bg-black text-white overflow-x-hidden">
         <div className="px-0">
