@@ -19,6 +19,7 @@ const bebasNeue = Bebas_Neue({
 });
 
 export const metadata = {
+  metadataBase: new URL("https://the49thstreet.com"),
   title: "The49thStreet",
   description: "The 49th Street",
   icons: {

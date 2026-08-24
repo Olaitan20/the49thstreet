@@ -68,6 +68,9 @@ export async function generateMetadata({ params }) {
     return {
       title: `${title} | 49th Street`,
       description: excerpt,
+      alternates: {
+        canonical: `/${slug}`,
+      },
       openGraph: {
         title: title,
         description: excerpt,
